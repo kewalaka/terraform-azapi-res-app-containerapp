@@ -1,6 +1,9 @@
 {
   "recommendations": [
     "hashicorp.terraform",
-    "EditorConfig.EditorConfig"
+    "editorconfig.editorconfig",
+    "azapi-vscode.azapi",
+    "ms-vscode-remote.remote-wsl",
+    "ms-vscode-remote.remote-containers"
   ]
 }
