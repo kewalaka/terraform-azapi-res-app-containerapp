@@ -244,7 +244,6 @@ list(object({
         name      = string
         serviceId = string
       })))
-      terminationGracePeriodSec = optional(number)
       volumes = optional(list(object({
         mountOptions = string
         name         = string
