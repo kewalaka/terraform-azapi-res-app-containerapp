@@ -15,12 +15,11 @@ variable "tags" {
   default     = {}
 }
 
-# # fails - might be related to https://github.com/Azure/ResourceModules/issues/2391 ?
-# variable "user_identity_resource_id" {
-#   type        = string
-#   description = "The managed identity definition for this resource."
-#   default     = ""
-# }
+variable "user_identity_resource_id" {
+  type        = string
+  description = "The managed identity definition for this resource."
+  default     = ""
+}
 
 variable "container_app_environment_resource_id" {
   type        = string
@@ -188,7 +187,7 @@ variable "container_apps" {
           volumeName = optional(string)
         })))
       })))
-      revisionSuffix = optional(string)
+      revisionSuffix = optional(string, null)
       scale = optional(object({
         maxReplicas = optional(number)
         minReplicas = optional(number)

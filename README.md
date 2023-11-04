@@ -202,7 +202,7 @@ list(object({
           volumeName = optional(string)
         })))
       })))
-      revisionSuffix = optional(string)
+      revisionSuffix = optional(string, null)
       scale = optional(object({
         maxReplicas = optional(number)
         minReplicas = optional(number)
@@ -327,6 +327,14 @@ Description: Custom tags to apply to the resource.
 Type: `map(string)`
 
 Default: `{}`
+
+### <a name="input_user_identity_resource_id"></a> [user\_identity\_resource\_id](#input\_user\_identity\_resource\_id)
+
+Description: The managed identity definition for this resource.
+
+Type: `string`
+
+Default: `""`
 
 ### <a name="input_workload_profile_name"></a> [workload\_profile\_name](#input\_workload\_profile\_name)
 

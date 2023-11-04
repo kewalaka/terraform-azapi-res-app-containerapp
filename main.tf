@@ -10,10 +10,10 @@ resource "azapi_resource" "container_app" {
   parent_id                 = data.azurerm_resource_group.rg.id
   location                  = local.location
   tags                      = var.tags
-  # identity {
-  #   type         = var.user_identity_resource_id == "" ? "SystemAssigned" : "SystemAssigned, UserAssigned"
-  #   identity_ids = var.user_identity_resource_id == "" ? [] : [var.user_identity_resource_id]
-  # }
+  identity {
+    type         = var.user_identity_resource_id == "" ? "SystemAssigned" : "SystemAssigned, UserAssigned"
+    identity_ids = var.user_identity_resource_id == "" ? [] : [var.user_identity_resource_id]
+  }
 
   body = jsonencode({
     properties = {

@@ -62,7 +62,7 @@ module "container_app" {
         image = "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest"
         name  = "containerapps-helloworld"
         resources = {
-          cpu    = 0.25
+          cpu    = "0.25"
           memory = "0.5Gi"
         }
       }]
