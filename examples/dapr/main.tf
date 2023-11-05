@@ -55,15 +55,15 @@ resource "azapi_resource" "managed_environment" {
 }
 
 # This is the module call
-module "container-app" {
+module "node-app" {
   source = "../../"
   # source             = "Azure/avm-<res/ptn>-<name>/azurerm"
-  name                                  = replace(azurerm_resource_group.this.name, "rg-", "ca-") # TODO remove workaround pending PR - https://github.com/Azure/terraform-azurerm-naming/pull/103
+  name                                  = replace(azurerm_resource_group.this.name, "rg-", "ca-nodeapp-") # TODO remove workaround pending PR - https://github.com/Azure/terraform-azurerm-naming/pull/103
   resource_group_name                   = azurerm_resource_group.this.name
   container_app_environment_resource_id = azapi_resource.managed_environment.id
 
   workload_profile_name = ""
-  container_apps = [{
+  container_app = {
     name = "nodeapp"
     configuration = {
       ingress = {
@@ -95,28 +95,38 @@ module "container-app" {
         maxReplicas = 1
       }
     }
-    },
-    {
-      name = "pythonapp"
-      configuration = {
-        dapr = {
-          enabled = true
-          appId   = "pythonapp"
-        }
+  }
+}
+
+module "python-app" {
+  source = "../../"
+  # source             = "Azure/avm-<res/ptn>-<name>/azurerm"
+  name                                  = replace(azurerm_resource_group.this.name, "rg-", "ca-pythonapp-") # TODO remove workaround pending PR - https://github.com/Azure/terraform-azurerm-naming/pull/103
+  resource_group_name                   = azurerm_resource_group.this.name
+  container_app_environment_resource_id = azapi_resource.managed_environment.id
+
+  workload_profile_name = ""
+  container_app = {
+    name = "pythonapp"
+    configuration = {
+      dapr = {
+        enabled = true
+        appId   = "pythonapp"
       }
-      template = {
-        containers = [{
-          image = "dapriosamples/hello-k8s-python:latest"
-          name  = "hello-k8s-python"
-          resources = {
-            cpu    = 0.5
-            memory = "1.0Gi"
-          }
-        }]
-        scale = {
-          minReplicas = 1
-          maxReplicas = 1
+    }
+    template = {
+      containers = [{
+        image = "dapriosamples/hello-k8s-python:latest"
+        name  = "hello-k8s-python"
+        resources = {
+          cpu    = 0.5
+          memory = "1.0Gi"
         }
+      }]
+      scale = {
+        minReplicas = 1
+        maxReplicas = 1
       }
-  }]
+    }
+  }
 }
