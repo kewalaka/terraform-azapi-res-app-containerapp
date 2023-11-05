@@ -40,9 +40,9 @@ The following providers are used by this module:
 
 - <a name="provider_azapi"></a> [azapi](#provider\_azapi) (1.9.0)
 
-- <a name="provider_azurerm"></a> [azurerm](#provider\_azurerm) (3.71.0)
+- <a name="provider_azurerm"></a> [azurerm](#provider\_azurerm) (>= 3.71.0)
 
-- <a name="provider_random"></a> [random](#provider\_random) (3.5.0)
+- <a name="provider_random"></a> [random](#provider\_random) (>= 3.5.0)
 
 ## Resources
 
@@ -305,7 +305,7 @@ Default: `null`
 ### <a name="input_enable_telemetry"></a> [enable\_telemetry](#input\_enable\_telemetry)
 
 Description: This variable controls whether or not telemetry is enabled for the module.  
-For more information see <https://aka.ms/avm/telemetryinfo>.  
+For more information see https://aka.ms/avm/telemetryinfo.  
 If it is set to false, then no telemetry will be collected.
 
 Type: `bool`
