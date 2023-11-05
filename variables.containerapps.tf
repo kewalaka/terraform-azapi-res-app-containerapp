@@ -32,28 +32,6 @@ variable "workload_profile_name" {
   default     = null
 }
 
-variable "dapr_components" {
-  description = "Specifies the dapr components in the managed environment."
-  type = list(object({
-    name          = string
-    componentType = string
-    version       = string
-    ignoreErrors  = optional(bool)
-    initTimeout   = string
-    secrets = optional(list(object({
-      name  = string
-      value = any
-    })))
-    metadata = optional(list(object({
-      name      = string
-      value     = optional(any)
-      secretRef = optional(any)
-    })))
-    scopes = optional(list(string))
-  }))
-  default = null
-}
-
 variable "container_apps" {
   description = "Specifies the container apps in the managed environment."
   type = list(object({

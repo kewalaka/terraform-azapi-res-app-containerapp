@@ -274,34 +274,6 @@ Type: `string`
 
 The following input variables are optional (have default values):
 
-### <a name="input_dapr_components"></a> [dapr\_components](#input\_dapr\_components)
-
-Description: Specifies the dapr components in the managed environment.
-
-Type:
-
-```hcl
-list(object({
-    name          = string
-    componentType = string
-    version       = string
-    ignoreErrors  = optional(bool)
-    initTimeout   = string
-    secrets = optional(list(object({
-      name  = string
-      value = any
-    })))
-    metadata = optional(list(object({
-      name      = string
-      value     = optional(any)
-      secretRef = optional(any)
-    })))
-    scopes = optional(list(string))
-  }))
-```
-
-Default: `null`
-
 ### <a name="input_enable_telemetry"></a> [enable\_telemetry](#input\_enable\_telemetry)
 
 Description: This variable controls whether or not telemetry is enabled for the module.  
