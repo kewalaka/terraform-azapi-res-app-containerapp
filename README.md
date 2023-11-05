@@ -49,7 +49,9 @@ The following providers are used by this module:
 The following resources are used by this module:
 
 - [azapi_resource.container_app](https://registry.terraform.io/providers/Azure/azapi/1.9.0/docs/resources/resource) (resource)
+- [azurerm_management_lock.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/management_lock) (resource)
 - [azurerm_resource_group_template_deployment.telemetry](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/resource_group_template_deployment) (resource)
+- [azurerm_role_assignment.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/role_assignment) (resource)
 - [random_id.telem](https://registry.terraform.io/providers/hashicorp/random/latest/docs/resources/id) (resource)
 - [azurerm_resource_group.rg](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/resource_group) (data source)
 
@@ -71,7 +73,7 @@ Description: Specifies the container apps in the managed environment.
 Type:
 
 ```hcl
-list(object({
+object({
     name          = string
     revision_mode = optional(string, "Single")
 
@@ -255,7 +257,7 @@ list(object({
         storageType = string
       })))
     })
-  }))
+  })
 ```
 
 ### <a name="input_name"></a> [name](#input\_name)
@@ -291,6 +293,42 @@ Description: Azure region where the resource should be deployed.
 Type: `string`
 
 Default: `null`
+
+### <a name="input_lock"></a> [lock](#input\_lock)
+
+Description: The lock level to apply to the Container App. Default is `None`. Possible values are `None`, `CanNotDelete`, and `ReadOnly`.
+
+Type:
+
+```hcl
+object({
+    name = optional(string, null)
+    kind = optional(string, "None")
+
+  })
+```
+
+Default: `{}`
+
+### <a name="input_role_assignments"></a> [role\_assignments](#input\_role\_assignments)
+
+Description: required AVM interfaces
+
+Type:
+
+```hcl
+map(object({
+    role_definition_id_or_name             = string
+    principal_id                           = string
+    description                            = optional(string, null)
+    skip_service_principal_aad_check       = optional(bool, true)
+    condition                              = optional(string, null)
+    condition_version                      = optional(string, "2.0")
+    delegated_managed_identity_resource_id = optional(string)
+  }))
+```
+
+Default: `{}`
 
 ### <a name="input_tags"></a> [tags](#input\_tags)
 

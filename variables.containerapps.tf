@@ -34,7 +34,7 @@ variable "workload_profile_name" {
 
 variable "container_apps" {
   description = "Specifies the container apps in the managed environment."
-  type = list(object({
+  type = object({
     name          = string
     revision_mode = optional(string, "Single")
 
@@ -218,5 +218,5 @@ variable "container_apps" {
         storageType = string
       })))
     })
-  }))
+  })
 }

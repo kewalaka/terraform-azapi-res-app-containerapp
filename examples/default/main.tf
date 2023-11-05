@@ -50,7 +50,7 @@ module "container_app" {
   container_app_environment_resource_id = azurerm_container_app_environment.this.id
 
   workload_profile_name = "Consumption"
-  container_apps = [{
+  container_apps = {
     name = "helloworld"
     configuration = {
       ingress = {
@@ -71,6 +71,5 @@ module "container_app" {
         maxReplicas = 1
       }
     }
-    }
-  ]
+  }
 }
