@@ -1,7 +1,7 @@
 <!-- BEGIN_TF_DOCS -->
-# Default example
+# Distributed Application Runtime (Dapr) example
 
-This deploys the module in its simplest form.
+This deploys the two containers used in this [Microsoft Learn tutorial](https://learn.microsoft.com/en-us/azure/container-apps/microservices-dapr?tabs=bash%2Cazure-cli).
 
 ```hcl
 terraform {
@@ -10,6 +10,10 @@ terraform {
     azurerm = {
       source  = "hashicorp/azurerm"
       version = ">= 3.7.0, < 4.0.0"
+    }
+    azapi = {
+      source  = "Azure/azapi"
+      version = "1.9.0"
     }
   }
 }
@@ -41,35 +45,55 @@ resource "azurerm_resource_group" "this" {
   location = "australiaeast"
 }
 
-resource "azurerm_container_app_environment" "this" {
-  name                = replace(azurerm_resource_group.this.name, "rg-", "cae-") # TODO remove workaround pending PR - https://github.com/Azure/terraform-azurerm-naming/pull/103
-  location            = azurerm_resource_group.this.location
-  resource_group_name = azurerm_resource_group.this.name
+resource "azapi_resource" "managed_environment" {
+  name      = replace(azurerm_resource_group.this.name, "rg-", "cae-") # TODO remove workaround pending PR - https://github.com/Azure/terraform-azurerm-naming/pull/103
+  location  = azurerm_resource_group.this.location
+  parent_id = azurerm_resource_group.this.id
+  type      = "Microsoft.App/managedEnvironments@2022-03-01"
+
+  body = jsonencode({
+    properties = {
+      appLogsConfiguration = {
+        destination = "azure-monitor"
+      }
+    }
+  })
 }
 
 # This is the module call
-module "container_app" {
+module "container-app" {
   source = "../../"
   # source             = "Azure/avm-<res/ptn>-<name>/azurerm"
-  name                                  = replace(azurerm_resource_group.this.name, "rg-", "ca-")
+  name                                  = replace(azurerm_resource_group.this.name, "rg-", "ca-") # TODO remove workaround pending PR - https://github.com/Azure/terraform-azurerm-naming/pull/103
   resource_group_name                   = azurerm_resource_group.this.name
-  container_app_environment_resource_id = azurerm_container_app_environment.this.id
+  container_app_environment_resource_id = azapi_resource.managed_environment.id
 
-  workload_profile_name = "Consumption"
+  workload_profile_name = ""
   container_apps = [{
-    name = "helloworld"
+    name = "nodeapp"
     configuration = {
       ingress = {
-        external = true
+        external   = false
+        targetPort = 3000
+      }
+      dapr = {
+        enabled     = true
+        appId       = "nodeapp"
+        appProtocol = "http"
+        appPort     = 3000
       }
     }
     template = {
       containers = [{
-        image = "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest"
-        name  = "containerapps-helloworld"
+        image = "dapriosamples/hello-k8s-node:latest"
+        name  = "hello-k8s-node"
+        env = [{
+          name  = "APP_PORT"
+          value = 3000
+        }]
         resources = {
-          cpu    = "0.25"
-          memory = "0.5Gi"
+          cpu    = 0.5
+          memory = "1.0Gi"
         }
       }]
       scale = {
@@ -77,8 +101,30 @@ module "container_app" {
         maxReplicas = 1
       }
     }
-    }
-  ]
+    },
+    {
+      name = "pythonapp"
+      configuration = {
+        dapr = {
+          enabled = true
+          appId   = "pythonapp"
+        }
+      }
+      template = {
+        containers = [{
+          image = "dapriosamples/hello-k8s-python:latest"
+          name  = "hello-k8s-python"
+          resources = {
+            cpu    = 0.5
+            memory = "1.0Gi"
+          }
+        }]
+        scale = {
+          minReplicas = 1
+          maxReplicas = 1
+        }
+      }
+  }]
 }
 ```
 
@@ -89,11 +135,15 @@ The following requirements are needed by this module:
 
 - <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) (>= 1.3.0)
 
+- <a name="requirement_azapi"></a> [azapi](#requirement\_azapi) (1.9.0)
+
 - <a name="requirement_azurerm"></a> [azurerm](#requirement\_azurerm) (>= 3.7.0, < 4.0.0)
 
 ## Providers
 
 The following providers are used by this module:
+
+- <a name="provider_azapi"></a> [azapi](#provider\_azapi) (1.9.0)
 
 - <a name="provider_azurerm"></a> [azurerm](#provider\_azurerm) (>= 3.7.0, < 4.0.0)
 
@@ -101,7 +151,7 @@ The following providers are used by this module:
 
 The following resources are used by this module:
 
-- [azurerm_container_app_environment.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/container_app_environment) (resource)
+- [azapi_resource.managed_environment](https://registry.terraform.io/providers/Azure/azapi/1.9.0/docs/resources/resource) (resource)
 - [azurerm_resource_group.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/resource_group) (resource)
 
 <!-- markdownlint-disable MD013 -->
@@ -131,7 +181,7 @@ No outputs.
 
 The following Modules are called:
 
-### <a name="module_container_app"></a> [container\_app](#module\_container\_app)
+### <a name="module_container-app"></a> [container-app](#module\_container-app)
 
 Source: ../../
 

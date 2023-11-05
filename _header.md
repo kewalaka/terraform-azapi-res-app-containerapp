@@ -1,6 +1,12 @@
-# terraform-azurerm-avm-template
+# terraform-azurerm-avm-res-container-apps
 
-This is a template repo for Terraform Azure Verified Modules.
+This is a repo for Container Apps in the style of Azure Verified Modules (AVM), it is an 'unofficial' example that has been used for learning AVM.
+
+Note this uses the AZAPI provider because of support missing within the AzureRM provider for [workload profiles](https://github.com/hashicorp/terraform-provider-azurerm/issues/21747).
+
+Once required functionality is available within AzureRM, [azapi2azurerm](https://github.com/Azure/azapi2azurerm) can be used to convert this code.
+
+This project includes [examples](./examples/) showing default settings and an example from Microsoft Learn illustrating Dapr.
 
 Things to do:
 
