@@ -32,7 +32,7 @@ variable "workload_profile_name" {
   default     = null
 }
 
-variable "container_apps" {
+variable "container_app" {
   description = "Specifies the container apps in the managed environment."
   type = object({
     name          = string

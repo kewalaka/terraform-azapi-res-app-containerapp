@@ -60,13 +60,7 @@ The following resources are used by this module:
 
 The following input variables are required:
 
-### <a name="input_container_app_environment_resource_id"></a> [container\_app\_environment\_resource\_id](#input\_container\_app\_environment\_resource\_id)
-
-Description: Resource ID of environment.
-
-Type: `string`
-
-### <a name="input_container_apps"></a> [container\_apps](#input\_container\_apps)
+### <a name="input_container_app"></a> [container\_app](#input\_container\_app)
 
 Description: Specifies the container apps in the managed environment.
 
@@ -259,6 +253,12 @@ object({
     })
   })
 ```
+
+### <a name="input_container_app_environment_resource_id"></a> [container\_app\_environment\_resource\_id](#input\_container\_app\_environment\_resource\_id)
+
+Description: Resource ID of environment.
+
+Type: `string`
 
 ### <a name="input_name"></a> [name](#input\_name)
 

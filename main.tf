@@ -17,16 +17,16 @@ resource "azapi_resource" "container_app" {
   body = jsonencode({
     properties = {
       configuration = {
-        activeRevisionsMode  = try(var.container_apps.revision_mode, "Single")
-        dapr                 = try(var.container_apps.dapr, null)
-        ingress              = try(var.container_apps.ingress, null)
-        maxInactiveRevisions = try(var.container_apps.maxInactiveRevisions, null)
-        registries           = try(var.container_apps.registries, null)
-        secrets              = try(var.container_apps.secrets, null)
-        service              = try(var.container_apps.service, null)
+        activeRevisionsMode  = try(var.container_app.revision_mode, "Single")
+        dapr                 = try(var.container_app.dapr, null)
+        ingress              = try(var.container_app.ingress, null)
+        maxInactiveRevisions = try(var.container_app.maxInactiveRevisions, null)
+        registries           = try(var.container_app.registries, null)
+        secrets              = try(var.container_app.secrets, null)
+        service              = try(var.container_app.service, null)
       }
       environmentId       = var.container_app_environment_resource_id
-      template            = var.container_apps.template
+      template            = var.container_app.template
       workloadProfileName = var.workload_profile_name
     }
   })
