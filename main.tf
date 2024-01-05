@@ -11,8 +11,8 @@ resource "azapi_resource" "container_app" {
         dapr                 = var.dapr
         ingress              = var.ingress
         maxInactiveRevisions = var.max_inactive_revisions
-        #registries           = var.registry
-        #secrets              = var.secret
+        registries           = var.registry
+        secrets              = var.secret
         #service              = var.service
       }
       environmentId       = var.environment_resource_id

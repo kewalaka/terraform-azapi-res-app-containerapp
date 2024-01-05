@@ -16,11 +16,11 @@ variable "revision_mode" {
   default     = "Single"
 }
 
-variable "service" {
-  type        = string
-  description = "Container App to be a dev Container App Service"
-  default     = ""
-}
+# variable "service" {
+#   type        = string
+#   description = "Container App to be a dev Container App Service"
+#   default     = ""
+# }
 
 variable "template" {
   type = object({
