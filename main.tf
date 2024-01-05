@@ -3,52 +3,56 @@ data "azurerm_resource_group" "rg" {
 }
 
 resource "azapi_resource" "container_app" {
-  type                      = "Microsoft.App/containerApps@2023-05-01"
-  schema_validation_enabled = false
-  name                      = var.name
-  parent_id                 = data.azurerm_resource_group.rg.id
-  location                  = local.location
-  tags                      = var.tags
-  identity {
-    type         = var.user_identity_resource_id == "" ? "SystemAssigned" : "SystemAssigned, UserAssigned"
-    identity_ids = var.user_identity_resource_id == "" ? [] : [var.user_identity_resource_id]
-  }
-
+  type = "Microsoft.App/containerApps@2023-05-01"
   body = jsonencode({
     properties = {
       configuration = {
-        activeRevisionsMode  = try(var.container_app.revision_mode, "Single")
-        dapr                 = try(var.container_app.dapr, null)
-        ingress              = try(var.container_app.ingress, null)
-        maxInactiveRevisions = try(var.container_app.maxInactiveRevisions, null)
-        registries           = try(var.container_app.registries, null)
-        secrets              = try(var.container_app.secrets, null)
-        service              = try(var.container_app.service, null)
+        activeRevisionsMode  = try(var.revision_mode, "Single")
+        dapr                 = try(var.dapr, null)
+        ingress              = try(var.ingress, null)
+        maxInactiveRevisions = try(var.max_inactive_revisions, null)
+        registries           = try(var.registry, null)
+        secrets              = try(var.secret, null)
+        service              = try(var.service, null)
       }
-      environmentId       = var.container_app_environment_resource_id
-      template            = var.container_app.template
+      environmentId       = var.environment_resource_id
+      template            = var.template
       workloadProfileName = var.workload_profile_name
     }
   })
+  location                  = local.location
+  name                      = var.name
+  parent_id                 = data.azurerm_resource_group.rg.id
+  response_export_values    = ["identity"]
+  schema_validation_enabled = false
+  tags                      = var.tags
 
-  response_export_values = ["identity"]
+  dynamic "identity" {
+    for_each = var.managed_identities != null ? { this = var.managed_identities } : {}
+    content {
+      type         = identity.value.system_assigned && length(identity.value.user_assigned_resource_ids) > 0 ? "SystemAssigned, UserAssigned" : length(identity.value.user_assigned_resource_ids) > 0 ? "UserAssigned" : "SystemAssigned"
+      identity_ids = identity.value.user_assigned_resource_ids
+    }
+  }
 }
 
 resource "azurerm_management_lock" "this" {
-  count      = var.lock.kind != "None" ? 1 : 0
+  count = var.lock.kind != "None" ? 1 : 0
+
+  lock_level = var.lock.kind
   name       = coalesce(var.lock.name, "lock-${var.name}")
   scope      = azapi_resource.container_app.id
-  lock_level = var.lock.kind
 }
 
 resource "azurerm_role_assignment" "this" {
-  for_each                               = var.role_assignments
-  scope                                  = azapi_resource.container_app.id
-  role_definition_id                     = strcontains(lower(each.value.role_definition_id_or_name), lower(local.role_definition_resource_substring)) ? each.value.role_definition_id_or_name : null
-  role_definition_name                   = strcontains(lower(each.value.role_definition_id_or_name), lower(local.role_definition_resource_substring)) ? null : each.value.role_definition_id_or_name
+  for_each = var.role_assignments
+
   principal_id                           = each.value.principal_id
+  scope                                  = azapi_resource.container_app.id
   condition                              = each.value.condition
   condition_version                      = each.value.condition_version
-  skip_service_principal_aad_check       = each.value.skip_service_principal_aad_check
   delegated_managed_identity_resource_id = each.value.delegated_managed_identity_resource_id
+  role_definition_id                     = strcontains(lower(each.value.role_definition_id_or_name), lower(local.role_definition_resource_substring)) ? each.value.role_definition_id_or_name : null
+  role_definition_name                   = strcontains(lower(each.value.role_definition_id_or_name), lower(local.role_definition_resource_substring)) ? null : each.value.role_definition_id_or_name
+  skip_service_principal_aad_check       = each.value.skip_service_principal_aad_check
 }

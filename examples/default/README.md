@@ -51,31 +51,26 @@ resource "azurerm_container_app_environment" "this" {
 module "container_app" {
   source = "../../"
   # source             = "Azure/avm-<res/ptn>-<name>/azurerm"
-  name                                  = replace(azurerm_resource_group.this.name, "rg-", "ca-")
-  resource_group_name                   = azurerm_resource_group.this.name
-  container_app_environment_resource_id = azurerm_container_app_environment.this.id
+  name                    = replace(azurerm_resource_group.this.name, "rg-", "ca-")
+  resource_group_name     = azurerm_resource_group.this.name
+  environment_resource_id = azurerm_container_app_environment.this.id
 
   workload_profile_name = "Consumption"
-  container_app = {
-    name = "helloworld"
-    configuration = {
-      ingress = {
-        external = true
+  ingress = {
+    external = true
+  }
+  template = {
+    containers = [{
+      image = "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest"
+      name  = "containerapps-helloworld"
+      resources = {
+        cpu    = "0.25"
+        memory = "0.5Gi"
       }
-    }
-    template = {
-      containers = [{
-        image = "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest"
-        name  = "containerapps-helloworld"
-        resources = {
-          cpu    = "0.25"
-          memory = "0.5Gi"
-        }
-      }]
-      scale = {
-        minReplicas = 1
-        maxReplicas = 1
-      }
+    }]
+    scale = {
+      minReplicas = 1
+      maxReplicas = 1
     }
   }
 }

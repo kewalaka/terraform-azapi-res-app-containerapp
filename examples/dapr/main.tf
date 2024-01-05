@@ -58,75 +58,67 @@ resource "azapi_resource" "managed_environment" {
 module "node-app" {
   source = "../../"
   # source             = "Azure/avm-<res/ptn>-<name>/azurerm"
-  name                                  = replace(azurerm_resource_group.this.name, "rg-", "ca-nodeapp-") # TODO remove workaround pending PR - https://github.com/Azure/terraform-azurerm-naming/pull/103
-  resource_group_name                   = azurerm_resource_group.this.name
-  container_app_environment_resource_id = azapi_resource.managed_environment.id
+  name                    = replace(azurerm_resource_group.this.name, "rg-", "ca-nodeapp-") # TODO remove workaround pending PR - https://github.com/Azure/terraform-azurerm-naming/pull/103
+  resource_group_name     = azurerm_resource_group.this.name
+  environment_resource_id = azapi_resource.managed_environment.id
 
   workload_profile_name = ""
-  container_app = {
-    name = "nodeapp"
-    configuration = {
-      ingress = {
-        external   = false
-        targetPort = 3000
-      }
-      dapr = {
-        enabled     = true
-        appId       = "nodeapp"
-        appProtocol = "http"
-        appPort     = 3000
-      }
-    }
-    template = {
-      containers = [{
-        image = "dapriosamples/hello-k8s-node:latest"
-        name  = "hello-k8s-node"
-        env = [{
-          name  = "APP_PORT"
-          value = 3000
-        }]
-        resources = {
-          cpu    = 0.5
-          memory = "1.0Gi"
-        }
+  ingress = {
+    external   = false
+    targetPort = 3000
+  }
+  dapr = {
+    enabled     = true
+    appId       = "nodeapp"
+    appProtocol = "http"
+    appPort     = 3000
+  }
+  template = {
+    containers = [{
+      image = "dapriosamples/hello-k8s-node:latest"
+      name  = "hello-k8s-node"
+      env = [{
+        name  = "APP_PORT"
+        value = 3000
       }]
-      scale = {
-        minReplicas = 1
-        maxReplicas = 1
+      resources = {
+        cpu    = 0.5
+        memory = "1.0Gi"
       }
+    }]
+    scale = {
+      minReplicas = 1
+      maxReplicas = 1
     }
   }
+
 }
 
 module "python-app" {
   source = "../../"
   # source             = "Azure/avm-<res/ptn>-<name>/azurerm"
-  name                                  = replace(azurerm_resource_group.this.name, "rg-", "ca-pythonapp-") # TODO remove workaround pending PR - https://github.com/Azure/terraform-azurerm-naming/pull/103
-  resource_group_name                   = azurerm_resource_group.this.name
-  container_app_environment_resource_id = azapi_resource.managed_environment.id
+  name                    = replace(azurerm_resource_group.this.name, "rg-", "ca-pythonapp-") # TODO remove workaround pending PR - https://github.com/Azure/terraform-azurerm-naming/pull/103
+  resource_group_name     = azurerm_resource_group.this.name
+  environment_resource_id = azapi_resource.managed_environment.id
 
   workload_profile_name = ""
-  container_app = {
-    name = "pythonapp"
-    configuration = {
-      dapr = {
-        enabled = true
-        appId   = "pythonapp"
+  dapr = {
+    enabled = true
+    appId   = "pythonapp"
+  }
+  template = {
+    containers = [{
+      image = "dapriosamples/hello-k8s-python:latest"
+      name  = "hello-k8s-python"
+      resources = {
+        cpu    = 0.5
+        memory = "1.0Gi"
       }
-    }
-    template = {
-      containers = [{
-        image = "dapriosamples/hello-k8s-python:latest"
-        name  = "hello-k8s-python"
-        resources = {
-          cpu    = 0.5
-          memory = "1.0Gi"
-        }
-      }]
-      scale = {
-        minReplicas = 1
-        maxReplicas = 1
-      }
+    }]
+    scale = {
+      minReplicas = 1
+      maxReplicas = 1
     }
   }
+
 }
