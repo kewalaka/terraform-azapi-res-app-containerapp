@@ -7,13 +7,7 @@ resource "azapi_resource" "container_app" {
   body = jsonencode({
     properties = {
       configuration = {
-        activeRevisionsMode  = try(var.revision_mode, "Single")
-        dapr                 = try(var.dapr, null)
-        ingress              = try(var.ingress, null)
-        maxInactiveRevisions = try(var.max_inactive_revisions, null)
-        registries           = try(var.registry, null)
-        secrets              = try(var.secret, null)
-        service              = try(var.service, null)
+        ingress = var.ingress
       }
       environmentId       = var.environment_resource_id
       template            = var.template
