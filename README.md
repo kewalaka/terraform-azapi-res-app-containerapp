@@ -344,11 +344,11 @@ Default: `false`
 
 Description: This object defines the ingress properties for the container app:
 
-- `allowInsecure` - (Optional) Should this ingress allow insecure connections?
-- `clientCertificateMode` - (Optional) The mode for client certificate authentication. Possible values include `optional` and `required`.
-- `exposedPort` - (Optional) The exposed port on the container for the Ingress traffic.
+- `allow_insecure_connections` - (Optional) Should this ingress allow insecure connections?
+- `client_certificate_mode` - (Optional) The mode for client certificate authentication. Possible values include `optional` and `required`.
+- `exposed_port` - (Optional) The exposed port on the container for the Ingress traffic.
 - `external` - (Optional) Are connections to this Ingress from outside the Container App Environment enabled? Defaults to `false`.
-- `targetPort` - (Required) The target port on the container for the Ingress traffic.
+- `target_port` - (Required) The target port on the container for the Ingress traffic.
 - `transport` - (Optional) The transport method for the Ingress. Possible values are `auto`, `http`, `http2`, and `tcp`. Defaults to `auto`.
 
 ---
@@ -388,38 +388,38 @@ Type:
 
 ```hcl
 object({
-    allowInsecure         = optional(bool, false)
-    clientCertificateMode = optional(string, "Ignore")
-    corsPolicy = optional(object({
-      allowCredentials = optional(bool, false)
-      allowedHeaders   = optional(list(string))
-      allowedMethods   = optional(list(string))
-      allowedOrigins   = optional(list(string))
-      exposeHeaders    = optional(list(string))
-      maxAge           = optional(number)
+    allow_insecure_connections = optional(bool, false)
+    client_certificate_mode    = optional(string, "Ignore")
+    cors_policy = optional(object({
+      allow_credentials = optional(bool, false)
+      allowed_headers   = optional(list(string))
+      allowed_methods   = optional(list(string))
+      allowed_origins   = optional(list(string))
+      expose_headers    = optional(list(string))
+      max_age           = optional(number)
     }), null)
-    customDomains = optional(list(object({
-      bindingType   = optional(string)
-      certificateId = optional(string)
-      name          = optional(string)
+    custom_domain = optional(list(object({
+      certificate_binding_type = optional(string)
+      certificate_id           = optional(string)
+      name                     = optional(string)
     })), null)
-    exposedPort = optional(number, 0)
-    external    = optional(bool, false)
-    ipSecurityRestrictions = optional(list(object({
-      action         = optional(string)
-      description    = optional(string)
-      ipAddressRange = optional(string)
-      name           = optional(string)
+    exposed_port = optional(number, 0)
+    external     = optional(bool, false)
+    ip_restrictions = optional(list(object({
+      action      = optional(string)
+      description = optional(string)
+      ip_range    = optional(string)
+      name        = optional(string)
     })))
-    stickySessions = optional(object({
+    sticky_sessions = optional(object({
       affinity = optional(string, "none")
     }))
-    targetPort = optional(number)
-    traffic = optional(list(object({
-      label          = optional(string)
-      latestRevision = optional(bool, true)
-      revisionName   = optional(string)
-      weight         = optional(number, 100)
+    target_port = optional(number)
+    traffic_weight = optional(list(object({
+      label           = optional(string)
+      latest_revision = optional(bool, true)
+      revision_suffix = optional(string)
+      percentage      = optional(number, 100)
     })))
     transport = optional(string, "Auto")
   })
