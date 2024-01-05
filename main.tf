@@ -8,7 +8,16 @@ resource "azapi_resource" "container_app" {
     properties = {
       configuration = {
         activeRevisionsMode = var.revision_mode
-        dapr                = var.dapr
+        dapr = var.dapr != null ? {
+          appId              = var.dapr.app_id
+          appPort            = var.dapr.app_port
+          appProtocol        = var.dapr.app_protocol
+          enableApiLogging   = var.dapr.enable_api_logging
+          enabled            = var.dapr.enabled
+          httpMaxRequestSize = var.dapr.http_max_request_size
+          httpReadBufferSize = var.dapr.http_read_buffer_size
+          logLevel           = var.dapr.log_level
+        } : null
         ingress = var.ingress != null ? {
           allowInsecure         = var.ingress.allow_insecure_connections
           clientCertificateMode = var.ingress.client_certificate_mode
@@ -46,8 +55,15 @@ resource "azapi_resource" "container_app" {
           } : null
         } : null
         maxInactiveRevisions = var.max_inactive_revisions
-        registries           = var.registry
-        secrets              = var.secret
+        registries = var.registry != null ? [
+          for reg in var.registry : {
+            identity          = reg.identity
+            passwordSecretRef = reg.password_secret_name
+            server            = reg.server
+            username          = reg.username
+          }
+        ] : null
+        secrets = var.secret
         #service              = var.service
       }
       environmentId       = var.environment_resource_id

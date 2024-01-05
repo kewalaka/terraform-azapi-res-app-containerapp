@@ -48,7 +48,7 @@ module "container_app" {
   workload_profile_name = "Consumption"
   ingress = {
     external_enabled = true
-    targetPort       = 80
+    target_port      = 80
   }
   template = {
     containers = [{

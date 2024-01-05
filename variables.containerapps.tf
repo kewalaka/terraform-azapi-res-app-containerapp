@@ -249,29 +249,26 @@ EOT
 
 variable "dapr" {
   type = object({
-    appId              = optional(string)
-    appPort            = optional(number)
-    appProtocol        = optional(string, "http")
-    enableApiLogging   = optional(bool, false)
-    enabled            = optional(bool, false)
-    httpMaxRequestSize = optional(number)
-    httpReadBufferSize = optional(number)
-    logLevel           = optional(string)
+    app_id                = optional(string)
+    app_port              = optional(number)
+    app_protocol          = optional(string, "http")
+    enable_api_logging    = optional(bool, false)
+    enabled               = optional(bool, false)
+    http_max_request_size = optional(number)
+    http_read_buffer_size = optional(number)
+    log_level             = optional(string)
   })
   default     = null
   description = <<-EOT
-Dapr properties:
-
-- `appId` - (Required) The Dapr Application Identifier.
-- `appPort` - (Optional) The port on which the application is listening. This is the same as the `ingress` port.
-- `appProtocol` - (Optional) The protocol for the app. Possible values include `http` and `grpc`. Defaults to `http`.
-- `enableApiLogging` - (Optional) Enables Dapr API logging. Defaults to `false`.
-- `enabled` - (Optional) Enables or disables Dapr for the application. Defaults to `false`.
-- `httpMaxRequestSize` - (Optional) The maximum size of an HTTP request that Dapr will accept in bytes.
-- `httpReadBufferSize` - (Optional) The buffer size for reading the request body in bytes.
-- `logLevel` - (Optional) The log level for Dapr. Possible values include `trace`, `debug`, `info`, `warn`, `error`, and `fatal`.
-
-EOT
+    - `app_id` - (Optional) The Dapr Application Identifier.
+    - `app_port` - (Optional) The port which the application is listening on. This is the same as the `ingress` port.
+    - `app_protocol` - (Optional) The protocol for the app. Possible values include `http` and `grpc`. Defaults to `http`.
+    - `enable_api_logging` - (Optional) Enable API logging. Defaults to `false`.
+    - `enabled` - (Optional) Enable Dapr for the application. Defaults to `false`.
+    - `http_max_request_size` - (Optional) The maximum allowed HTTP request size in bytes.
+    - `http_read_buffer_size` - (Optional) The size of the buffer used for reading the HTTP request body in bytes.
+    - `log_level` - (Optional) The log level for Dapr. Possible values include "debug", "info", "warn", "error", and "fatal".
+  EOT
 }
 
 variable "ingress" {
@@ -315,64 +312,68 @@ variable "ingress" {
   description = <<-EOT
 This object defines the ingress properties for the container app:
 
-- `allow_insecure_connections` - (Optional) Should this ingress allow insecure connections?
-- `client_certificate_mode` - (Optional) The mode for client certificate authentication. Possible values include `optional` and `required`.
-- `exposed_port` - (Optional) The exposed port on the container for the Ingress traffic.
-- `external` - (Optional) Are connections to this Ingress from outside the Container App Environment enabled? Defaults to `false`.
-- `target_port` - (Required) The target port on the container for the Ingress traffic.
-- `transport` - (Optional) The transport method for the Ingress. Possible values are `auto`, `http`, `http2`, and `tcp`. Defaults to `auto`.
+---
+- `allow_insecure_connections` - (Optional) Should this ingress allow insecure connections? Defaults to `false`.
+- `client_certificate_mode` - (Optional) The mode for client certificate authentication. Possible values include `optional` and `required`. Defaults to `Ignore`.
+- `exposed_port` - (Optional) The exposed port on the container for the Ingress traffic. Defaults to `0`.
+- `external_enabled` - (Optional) Are connections to this Ingress from outside the Container App Environment enabled? Defaults to `false`.
+- `target_port` - (Required) The target port on the container for the Ingress traffic. Defaults to `Auto`.
+- `transport` - (Optional) The transport method for the Ingress. Possible values include `auto`, `http`, `http2`, and `tcp`. Defaults to `Auto`.
 
 ---
-- `corsPolicy` - (Optional) CORS (Cross-Origin Resource Sharing) policy configuration.
-  - `allowCredentials` - (Optional) Indicates whether the browser should include credentials when making a request. Defaults to `false`.
-  - `allowedHeaders` - (Optional) List of headers that can be used when making the actual request.
-  - `allowedMethods` - (Optional) List of HTTP methods that can be used when making the actual request.
-  - `allowedOrigins` - (Optional) List of origins that are allowed to access the resource.
-  - `exposeHeaders` - (Optional) List of response headers that can be exposed when making the actual request.
-  - `maxAge` - (Optional) The maximum number of seconds the results of a preflight request can be cached.
+`cors_policy` block supports the following:
+- `allow_credentials` - (Optional) Indicates whether the browser should include credentials when making a request. Defaults to `false`.
+- `allowed_headers` - (Optional) List of headers that can be used when making the actual request.
+- `allowed_methods` - (Optional) List of HTTP methods that can be used when making the actual request.
+- `allowed_origins` - (Optional) List of origins that are allowed to access the resource.
+- `expose_headers` - (Optional) List of response headers that can be exposed when making the actual request.
+- `max_age` - (Optional) The maximum number of seconds the results of a preflight request can be cached.
 
 ---
-- `customDomains` - (Optional) List of custom domains for the Ingress.
-  - `bindingType` - (Optional) The binding type. Possible values include `Disabled` and `SniEnabled`. Defaults to `Disabled`.
-  - `certificateId` - (Optional) The ID of the Container App Environment Certificate.
-  - `name` - (Optional) The hostname of the Certificate. Must be the CN or a named SAN in the certificate.
+`custom_domain` block supports the following:
+- `certificate_binding_type` - (Optional) The Binding type. Possible values include `Disabled` and `SniEnabled`. Defaults to `Disabled`.
+- `certificate_id` - (Optional) The ID of the Container App Environment Certificate.
+- `name` - (Optional) The hostname of the Certificate. Must be the CN or a named SAN in the certificate.
 
 ---
-- `ipSecurityRestrictions` - (Optional) List of IP security restrictions for the Ingress.
-  - `action` - (Optional) The action to take when the IP security restriction is triggered. Possible values include `allow` and `deny`.
-  - `description` - (Optional) A description for the IP security restriction.
-  - `ipAddressRange` - (Optional) The IP address range for the security restriction.
-  - `name` - (Optional) The name for the IP security restriction.
+`ip_restrictions` block supports the following:
+- `action` - (Optional) The action to take when the IP security restriction is triggered. Possible values include `allow` and `deny`.
+- `description` - (Optional) A description for the IP security restriction.
+- `ip_range` - (Optional) The IP address range for the security restriction.
+- `name` - (Optional) The name for the IP security restriction.
 
 ---
-- `stickySessions` - (Optional) Sticky sessions configuration for the Ingress.
-  - `affinity` - (Optional) The affinity type for sticky sessions. Possible values include `None`, `ClientIP`, and `Server`.
+`sticky_sessions` block supports the following:
+- `affinity` - (Optional) The affinity type for sticky sessions. Possible values include `None`, `ClientIP`, and `Server`.
 
 ---
-- `traffic` - (Optional) List of traffic routing configurations for the Ingress.
-  - `label` - (Optional) The label to apply to the revision as a name prefix for routing traffic.
-  - `latestRevision` - (Optional) This traffic configuration relates to the latest stable Container Revision.
-  - `percentage` - (Required) The percentage of traffic which should be sent according to this configuration.
-  - `revisionName` - (Optional) The suffix string to which this traffic configuration applies.
+`traffic_weight` block supports the following:
+- `label` - (Optional) The label to apply to the revision as a name prefix for routing traffic.
+- `latest_revision` - (Optional) This traffic Weight relates to the latest stable Container Revision.
+- `revision_suffix` - (Optional) The suffix string to which this `traffic_weight` applies.
+- `percentage` - (Required) The percentage of traffic which should be sent according to this configuration.
 
 EOT
 }
 
 variable "registry" {
   type = list(object({
-    identity          = optional(string)
-    passwordSecretRef = optional(string)
-    server            = optional(string)
-    username          = optional(string)
+    identity             = optional(string)
+    password_secret_name = optional(string)
+    server               = optional(string)
+    username             = optional(string)
   }))
   default     = null
   description = <<-EOT
- - `identity` - (Optional) Resource ID for the User Assigned Managed identity to use when pulling from the Container Registry.
- - `passwordSecretRef` - (Optional) The name of the Secret Reference containing the password value for this user on the Container Registry, `username` must also be supplied.
- - `server` - (Required) The hostname for the Container Registry.
- - `username` - (Optional) The username to use for this Container Registry, `password_secret_name` must also be supplied..
+
+    - `identity` - (Optional) Resource ID for the User Assigned Managed identity to use when pulling from the Container Registry.
+    - `password_secret_name ` - (Optional) The name of the Secret Reference containing the password value for this user on the Container Registry, `username` must also be supplied.
+    - `server` - (Optional) The hostname for the Container Registry.
+    - `username` - (Optional) The username to use for this Container Registry, `password_secret_name` must also be supplied.
+
 EOT
 }
+
 
 variable "secret" {
   type = set(object({
