@@ -276,8 +276,8 @@ EOT
 
 variable "ingress" {
   type = object({
-    allowInsecure         = optional(bool)
-    clientCertificateMode = optional(string)
+    allowInsecure         = optional(bool, false)
+    clientCertificateMode = optional(string, "Ignore")
     corsPolicy = optional(object({
       allowCredentials = optional(bool)
       allowedHeaders   = optional(list(string))
@@ -285,14 +285,14 @@ variable "ingress" {
       allowedOrigins   = optional(list(string))
       exposeHeaders    = optional(list(string))
       maxAge           = optional(number)
-    }))
+    }), null)
     customDomains = optional(list(object({
       bindingType   = optional(string)
       certificateId = optional(string)
       name          = optional(string)
-    })))
-    exposedPort = optional(number)
-    external    = optional(bool)
+    })), null)
+    exposedPort = optional(number, 0)
+    external    = optional(bool, false)
     ipSecurityRestrictions = optional(list(object({
       action         = optional(string)
       description    = optional(string)
@@ -300,16 +300,16 @@ variable "ingress" {
       name           = optional(string)
     })))
     stickySessions = optional(object({
-      affinity = optional(string)
+      affinity = optional(string, "none")
     }))
     targetPort = optional(number)
     traffic = optional(list(object({
       label          = optional(string)
-      latestRevision = optional(bool)
+      latestRevision = optional(bool, true)
       revisionName   = optional(string)
-      weight         = optional(number)
+      weight         = optional(number, 100)
     })))
-    transport = optional(string)
+    transport = optional(string, "Auto")
   })
   default     = null
   description = <<-EOT
