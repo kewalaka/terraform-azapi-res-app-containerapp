@@ -319,9 +319,9 @@ Type:
 object({
     appId              = optional(string)
     appPort            = optional(number)
-    appProtocol        = optional(string)
-    enableApiLogging   = optional(bool)
-    enabled            = optional(bool)
+    appProtocol        = optional(string, "http")
+    enableApiLogging   = optional(bool, false)
+    enabled            = optional(bool, false)
     httpMaxRequestSize = optional(number)
     httpReadBufferSize = optional(number)
     logLevel           = optional(string)
@@ -391,7 +391,7 @@ object({
     allowInsecure         = optional(bool, false)
     clientCertificateMode = optional(string, "Ignore")
     corsPolicy = optional(object({
-      allowCredentials = optional(bool)
+      allowCredentials = optional(bool, false)
       allowedHeaders   = optional(list(string))
       allowedMethods   = optional(list(string))
       allowedOrigins   = optional(list(string))

@@ -30,7 +30,7 @@ resource "azurerm_resource_group" "this" {
 }
 
 resource "azapi_resource" "managed_environment" {
-  name      = replace(azurerm_resource_group.this.name, "rg-", "cae-") # TODO remove workaround pending PR - https://github.com/Azure/terraform-azurerm-naming/pull/103
+  name      = module.naming.container_app_environment.name_unique
   location  = azurerm_resource_group.this.location
   parent_id = azurerm_resource_group.this.id
   type      = "Microsoft.App/managedEnvironments@2022-03-01"
@@ -45,10 +45,10 @@ resource "azapi_resource" "managed_environment" {
 }
 
 # This is the module call
-module "node-app" {
+module "node_app" {
   source = "../../"
   # source             = "Azure/avm-<res/ptn>-<name>/azurerm"
-  name                    = replace(azurerm_resource_group.this.name, "rg-", "ca-nodeapp-") # TODO remove workaround pending PR - https://github.com/Azure/terraform-azurerm-naming/pull/103
+  name                    = module.naming.container_app.name_unique
   resource_group_name     = azurerm_resource_group.this.name
   environment_resource_id = azapi_resource.managed_environment.id
 
@@ -84,10 +84,10 @@ module "node-app" {
 
 }
 
-module "python-app" {
+module "python_app" {
   source = "../../"
   # source             = "Azure/avm-<res/ptn>-<name>/azurerm"
-  name                    = replace(azurerm_resource_group.this.name, "rg-", "ca-pythonapp-") # TODO remove workaround pending PR - https://github.com/Azure/terraform-azurerm-naming/pull/103
+  name                    = module.naming.container_app.name_unique
   resource_group_name     = azurerm_resource_group.this.name
   environment_resource_id = azapi_resource.managed_environment.id
 

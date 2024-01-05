@@ -32,7 +32,7 @@ resource "azurerm_resource_group" "this" {
 }
 
 resource "azurerm_container_app_environment" "this" {
-  name                = replace(azurerm_resource_group.this.name, "rg-", "cae-") # TODO remove workaround pending PR - https://github.com/Azure/terraform-azurerm-naming/pull/103
+  name                = module.naming.container_app_environment.name_unique
   location            = azurerm_resource_group.this.location
   resource_group_name = azurerm_resource_group.this.name
 }
@@ -41,7 +41,7 @@ resource "azurerm_container_app_environment" "this" {
 module "container_app" {
   source = "../../"
   # source             = "Azure/avm-<res/ptn>-<name>/azurerm"
-  name                    = replace(azurerm_resource_group.this.name, "rg-", "ca-")
+  name                    = module.naming.container_app.name_unique
   resource_group_name     = azurerm_resource_group.this.name
   environment_resource_id = azurerm_container_app_environment.this.id
 
