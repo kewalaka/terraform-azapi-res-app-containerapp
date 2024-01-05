@@ -554,14 +554,6 @@ set(object({
 
 Default: `null`
 
-### <a name="input_service"></a> [service](#input\_service)
-
-Description: Container App to be a dev Container App Service
-
-Type: `string`
-
-Default: `""`
-
 ### <a name="input_tags"></a> [tags](#input\_tags)
 
 Description: Custom tags to apply to the resource.
