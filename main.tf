@@ -7,7 +7,13 @@ resource "azapi_resource" "container_app" {
   body = jsonencode({
     properties = {
       configuration = {
-        ingress = var.ingress
+        activeRevisionsMode  = var.revision_mode
+        dapr                 = var.dapr
+        ingress              = var.ingress
+        maxInactiveRevisions = var.max_inactive_revisions
+        registries           = var.registry
+        secrets              = var.secret
+        service              = var.service
       }
       environmentId       = var.environment_resource_id
       template            = var.template
@@ -26,6 +32,16 @@ resource "azapi_resource" "container_app" {
     content {
       type         = identity.value.system_assigned && length(identity.value.user_assigned_resource_ids) > 0 ? "SystemAssigned, UserAssigned" : length(identity.value.user_assigned_resource_ids) > 0 ? "UserAssigned" : "SystemAssigned"
       identity_ids = identity.value.user_assigned_resource_ids
+    }
+  }
+
+  dynamic "timeouts" {
+    for_each = var.timeouts == null ? [] : [var.timeouts]
+    content {
+      create = timeouts.value.create
+      delete = timeouts.value.delete
+      read   = timeouts.value.read
+      update = timeouts.value.update
     }
   }
 }
