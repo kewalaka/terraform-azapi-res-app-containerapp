@@ -291,8 +291,8 @@ variable "ingress" {
       certificate_id           = optional(string)
       name                     = optional(string)
     })), null)
-    exposed_port = optional(number, 0)
-    external     = optional(bool, false)
+    exposed_port     = optional(number, 0)
+    external_enabled = optional(bool, false)
     ip_restrictions = optional(list(object({
       action      = optional(string)
       description = optional(string)
