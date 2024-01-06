@@ -24,6 +24,10 @@ variable "revision_mode" {
 
 variable "template" {
   type = object({
+    max_replicas    = optional(number)
+    min_replicas    = optional(number)
+    revision_suffix = optional(string, null)
+
     container = list(object({
       args    = optional(list(string))
       command = optional(list(string))
@@ -37,14 +41,15 @@ variable "template" {
         value       = optional(string)
       })))
       liveness_probe = optional(list(object({
-        failure_count_threshold = optional(number)
-        host                    = optional(string)
-        initial_delay           = optional(number)
-        interval_seconds        = optional(number)
-        path                    = optional(string)
-        port                    = number
-        timeout                 = optional(number)
-        transport               = string
+        failure_count_threshold          = optional(number)
+        host                             = optional(string)
+        initial_delay                    = optional(number)
+        interval_seconds                 = optional(number)
+        path                             = optional(string)
+        port                             = number
+        termination_grace_period_seconds = optional(number)
+        timeout                          = optional(number)
+        transport                        = string
         header = optional(list(object({
           name  = string
           value = string
@@ -65,13 +70,14 @@ variable "template" {
         })))
       })), [])
       startup_probe = optional(list(object({
-        failure_count_threshold = optional(number)
-        host                    = optional(string)
-        interval_seconds        = optional(number)
-        path                    = optional(string)
-        port                    = number
-        timeout                 = optional(number)
-        transport               = string
+        failure_count_threshold          = optional(number)
+        host                             = optional(string)
+        interval_seconds                 = optional(number)
+        path                             = optional(string)
+        port                             = number
+        termination_grace_period_seconds = optional(number)
+        timeout                          = optional(number)
+        transport                        = string
         header = optional(list(object({
           name  = string
           value = string
@@ -83,9 +89,6 @@ variable "template" {
         sub_path = optional(string)
       })))
     }))
-    max_replicas    = optional(number)
-    min_replicas    = optional(number)
-    revision_suffix = optional(string, null)
   })
   description = <<-EOT
 
@@ -103,93 +106,50 @@ Template properties:
 - `image` - (Required) The image to use to create the container.
 - `memory` - (Required) The amount of memory to allocate to the container. Possible values are `0.5Gi`, `1Gi`, `1.5Gi`, `2Gi`, `2.5Gi`, `3Gi`, `3.5Gi`, and `4Gi`.
 - `name` - (Required) The name of the container.
-- `probes` - (Optional) List of probes for the container.
-  - `failureThreshold` - (Optional) The number of consecutive failures required to consider this probe as failed. Possible values are between `1` and `10`. Defaults to `3`.
-  - `httpGet` - (Optional) HTTP probe configuration.
-      - `host` - (Optional) The probe hostname. Defaults to the pod IP address. Setting a value for `Host` in `headers` can be used to override this for `HTTP` and `HTTPS` type probes.
-      - `httpHeaders` - (Optional) List of HTTP headers for the probe.
-        - `name` - (Required) The HTTP Header Name.
-        - `value` - (Required) The HTTP Header value.
-      - `path` - (Optional) The URI to use for http type probes. Not valid for `TCP` type probes. Defaults to `/`.
-      - `port` - (Required) The port number on which to connect. Possible values are between `1` and `65535`.
-      - `scheme` - (Optional) The scheme for the probe. Possible values are `HTTP` and `HTTPS`.
-  - `initialDelaySeconds` - (Optional) The time in seconds to wait after the container has started before the probe is started.
-  - `periodSeconds` - (Optional) How often, in seconds, the probe should run. Possible values are in the range `1`.
-  - `successThreshold` - (Optional) The number of consecutive successful responses required to consider this probe as successful. Possible values are between `1` and `10`. Defaults to `3`.
-  - `tcpSocket` - (Optional) TCP probe configuration.
-      - `host` - (Optional) The host for the TCP probe.
-      - `port` - (Optional) The port for the TCP probe.
-  - `terminationGracePeriodSeconds` - (Optional) Time in seconds after the probe times out.
-  - `timeoutSeconds` - (Optional) Time in seconds after which the probe times out.
-  - `type` - (Optional) Type of probe. Possible values are `TCP`, `HTTP`, and `HTTPS`.
-- `resources` - (Optional) Resource configuration for the container.
-  - `cpu` - (Optional) The amount of CPU to allocate to the container.
-  - `memory` - (Optional) The amount of memory to allocate to the container.
-- `volumeMounts` - (Optional) List of volume mounts for the container.
-  - `mountPath` - (Optional) The path in the container at which to mount this volume.
-  - `subPath` - (Optional) Subpath within the volume from which the container's volume should be mounted.
-  - `volumeName` - (Optional) The name of the volume to mount.
+- `env` - (Optional) List of environment variables for the container.
+  - `name` - (Required) The name of the environment variable for the container.
+  - `secret_name` - (Optional) The name of the secret that contains the value for this environment variable.
+  - `value` - (Optional) The value for this environment variable.
+- `liveness_probe` - (Optional) List of liveness probes for the container.
+  - `failure_count_threshold` - (Optional) The number of consecutive failures required to consider this probe as failed. Possible values are between `1` and `10`. Defaults to `3`.
+  - `host` - (Optional) The probe hostname. Defaults to the pod IP address. Setting a value for `Host` in `headers` can be used to override this for `HTTP` and `HTTPS` type probes.
+  - `initial_delay` - (Optional) The time in seconds to wait after the container has started before the probe is started.
+  - `interval_seconds` - (Optional) How often, in seconds, the probe should run. Possible values are in the range `1`.
+  - `path` - (Optional) The URI to use for http type probes. Not valid for `TCP` type probes. Defaults to `/`.
+  - `port` - (Required) The port number on which to connect. Possible values are between `1` and `65535`.
+  - `termination_grace_period_seconds` - The time in seconds after the container is sent the termination signal before the process if forcibly killed.  
+  - `timeout` - (Optional) Time in seconds after which the probe times out. Possible values are in the range `1`.
+  - `transport` - (Required) Type of probe. Possible values are `TCP`, `HTTP`, and `HTTPS`.
+  - `header` - (Optional) List of HTTP headers for the probe.
+    - `name` - (Required) The HTTP Header Name.
+    - `value` - (Required) The HTTP Header value.
+- `readiness_probe` - (Optional) List of readiness probes for the container.
+  - `failure_count_threshold` - (Optional) The number of consecutive failures required to consider this probe as failed. Possible values are between `1` and `10`. Defaults to `3`.
+  - `success_count_threshold` - (Optional) The number of consecutive successful responses required to consider this probe as successful. Possible values are between `1` and `10`. Defaults to `3`.
+  - `host` - (Optional) The probe hostname. Defaults to the pod IP address. Setting a value for `Host` in `headers` can be used to override this for `HTTP` and `HTTPS` type probes.
+  - `initial_delay` - (Optional) The time in seconds to wait after the container has started before the probe is started.
+  - `interval_seconds` - (Optional) How often, in seconds, the probe should run. Possible values are in the range `1`.
+  - `path` - (Optional) The URI to use for http type probes. Not valid for `TCP` type probes. Defaults to `/`.
+  - `port` - (Required) The port number on which to connect. Possible values are between `1` and `65535`.
+  - `timeout` - (Optional) Time in seconds after which the probe times out. Possible values are in the range `1`.
+  - `transport` - (Required) Type of probe. Possible values are `TCP`, `HTTP`, and `HTTPS`.
+  - `header` - (Optional) List of HTTP headers for the probe.
+    - `name` - (Required) The HTTP Header Name.
+    - `value` - (Required) The HTTP Header value.
+- `startup_probe` - (Optional) List of readiness probes for the container.
+  - `failure_count_threshold` - (Optional) The number of consecutive failures required to consider this probe as failed. Possible values are between `1` and `10`. Defaults to `3`.
+  - `host` - (Optional) The probe hostname. Defaults to the pod IP address. Setting a value for `Host` in `headers` can be used to override this for `HTTP` and `HTTPS` type probes.
+  - `initial_delay` - (Optional) The time in seconds to wait after the container has started before the probe is started.
+  - `interval_seconds` - (Optional) How often, in seconds, the probe should run. Possible values are in the range `1`.
+  - `path` - (Optional) The URI to use for http type probes. Not valid for `TCP` type probes. Defaults to `/`.
+  - `port` - (Required) The port number on which to connect. Possible values are between `1` and `65535`.
+  - `termination_grace_period_seconds` - The time in seconds after the container is sent the termination signal before the process if forcibly killed.
+  - `timeout` - (Optional) Time in seconds after which the probe times out. Possible values are in the range `1`.
+  - `transport` - (Required) Type of probe. Possible values are `TCP`, `HTTP`, and `HTTPS`.
+  - `header` - (Optional) List of HTTP headers for the probe.
+    - `name` - (Required) The HTTP Header Name.
+    - `value` - (Required) The HTTP Header value.
 
----
-`initContainers` block supports the following:
-- `args` - (Optional) A list of extra arguments to pass to the container.
-- `command` - (Optional) A command to pass to the container to override the default. This is provided as a list of command line elements without spaces.
-- `cpu` - (Required) The amount of vCPU to allocate to the container. Possible values include `0.25`, `0.5`, `0.75`, `1.0`, `1.25`, `1.5`, `1.75`, and `2.0`.
-- `image` - (Required) The image to use to create the container.
-- `memory` - (Required) The amount of memory to allocate to the container. Possible values are `0.5Gi`, `1Gi`, `1.5Gi`, `2Gi`, `2.5Gi`, `3Gi`, `3.5Gi`, and `4Gi`.
-- `name` - (Required) The name of the container.
-- `resources` - (Optional) Resource configuration for the container.
-  - `cpu` - (Optional) The amount of CPU to allocate to the container.
-  - `memory` - (Optional) The amount of memory to allocate to the container.
-- `volumeMounts` - (Optional) List of volume mounts for the container.
-  - `mountPath` - (Optional) The path in the container at which to mount this volume.
-  - `subPath` - (Optional) Subpath within the volume from which the container's volume should be mounted.
-  - `volumeName` - (Optional) The name of the volume to mount.
-
----
-`scale` block supports the following:
-- `maxReplicas` - (Optional) The maximum number of replicas for this container.
-- `minReplicas` - (Optional) The minimum number of replicas for this container.
-- `rules` - (Optional) List of scaling rules.
-  - `name` - (Optional) The name of the Scaling Rule.
-  - `azureQueue` - (Optional) Azure Queue scaling rule configuration.
-      - `auth` - (Optional) Authentication configuration for the rule.
-        - `secretRef` - (Required) The name of the Container App Secret to use for this Scale Rule Authentication.
-        - `triggerParameter` - (Required) The Trigger Parameter name to use to supply the value retrieved from the `secretRef`.
-      - `queueLength` - (Required) The value of the length of the queue to trigger scaling actions.
-      - `queueName` - (Required) The name of the Azure Queue.
-  - `custom` - (Optional) Custom scaling rule configuration.
-      - `auth` - (Optional) Authentication configuration for the rule.
-        - `secretRef` - (Required) The name of the Container App Secret to use for this Scale Rule Authentication.
-        - `triggerParameter` - (Required) The Trigger Parameter name to use to supply the value retrieved from the `secretRef`.
-      - `metadata` - (Optional) Metadata for the custom scaling rule.
-      - `type` - (Optional) The type of the custom scaling rule.
-  - `http` - (Optional) HTTP scaling rule configuration.
-      - `auth` - (Optional) Authentication configuration for the rule.
-        - `secretRef` - (Required) The name of the Container App Secret to use for this Scale Rule Authentication.
-        - `triggerParameter` - (Required) The Trigger Parameter name to use to supply the value retrieved from the `secretRef`.
-      - `metadata` - (Optional) Metadata for the HTTP scaling rule.
-  - `name` - (Optional) The name of the Scaling Rule.
-  - `tcp` - (Optional) TCP scaling rule configuration.
-      - `auth` - (Optional) Authentication configuration for the rule.
-        - `secretRef` - (Required) The name of the Container App Secret to use for this Scale Rule Authentication.
-        - `triggerParameter` - (Required) The Trigger Parameter name to use to supply the value retrieved from the `secretRef`.
-      - `metadata` - (Optional) Metadata for the TCP scaling rule.
-
----
-- `serviceBinds` - (Optional) List of service binds.
-  - `name` - (Required) The name of the service bind.
-  - `serviceId` - (Required) The ID of the service.
-
----
-- `volumes` - (Optional) List of volumes.
-  - `mountOptions` - (Required) Mount options for the volume.
-  - `name` - (Required) The name of the volume.
-  - `secrets` - (Optional) List of secrets for the volume.
-      - `path` - (Required) The path for the secret.
-      - `secretRef` - (Required) The name of the secret.
-  - `storageName` - (Required) The name of the AzureFile storage.
-  - `storageType` - (Required) The type of storage volume. Possible values are `AzureFile`, `EmptyDir`, and `Secret`.
 EOT
   nullable    = false
 }

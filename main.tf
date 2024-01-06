@@ -91,11 +91,12 @@ resource "azapi_resource" "container_app" {
             probes = setunion(
               [
                 for liveness_probe in try(cont.liveness_probe, []) : {
-                  failureThreshold    = liveness_probe.failure_count_threshold
-                  initialDelaySeconds = liveness_probe.initial_delay
-                  periodSeconds       = liveness_probe.interval_seconds
-                  timeoutSeconds      = liveness_probe.timeout
-                  type                = "Liveness"
+                  failureThreshold              = liveness_probe.failure_count_threshold
+                  initialDelaySeconds           = liveness_probe.initial_delay
+                  periodSeconds                 = liveness_probe.interval_seconds
+                  terminationGracePeriodSeconds = liveness_probe.termination_grace_period_seconds
+                  timeoutSeconds                = liveness_probe.timeout
+                  type                          = "Liveness"
                   httpGet = liveness_probe.transport == "HTTP" || liveness_probe.transport == "HTTPS" ? {
                     host   = liveness_probe.host
                     path   = liveness_probe.path
@@ -140,11 +141,12 @@ resource "azapi_resource" "container_app" {
               }],
               [
                 for startup_probe in try(cont.startup_probe, []) : {
-                  failureThreshold    = startup_probe.failure_count_threshold
-                  initialDelaySeconds = startup_probe.initial_delay
-                  periodSeconds       = startup_probe.interval_seconds
-                  timeoutSeconds      = startup_probe.timeout
-                  type                = "startup"
+                  failureThreshold              = startup_probe.failure_count_threshold
+                  initialDelaySeconds           = startup_probe.initial_delay
+                  periodSeconds                 = startup_probe.interval_seconds
+                  terminationGracePeriodSeconds = startup_probe.termination_grace_period_seconds
+                  timeoutSeconds                = startup_probe.timeout
+                  type                          = "Startup"
                   httpGet = startup_probe.transport == "HTTP" || startup_probe.transport == "HTTPS" ? {
                     host   = startup_probe.host
                     path   = startup_probe.path
