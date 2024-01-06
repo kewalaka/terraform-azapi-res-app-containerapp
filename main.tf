@@ -63,7 +63,14 @@ resource "azapi_resource" "container_app" {
             username          = reg.username
           }
         ] : null
-        secrets = var.secret
+        secrets = var.secret != null ? [
+          for s in var.secret : {
+            identity    = s.identity
+            keyVaultUrl = s.key_vault_secret_id
+            name        = s.name
+            value       = s.value
+          }
+        ] : null
         #service              = var.service
       }
       environmentId = var.environment_resource_id
@@ -83,7 +90,7 @@ resource "azapi_resource" "container_app" {
             name  = cont.name
             probes = setunion(
               [
-                for liveness_probe in try(cont.liveness_probes, []) : {
+                for liveness_probe in try(cont.liveness_probe, []) : {
                   failureThreshold    = liveness_probe.failure_count_threshold
                   initialDelaySeconds = liveness_probe.initial_delay
                   periodSeconds       = liveness_probe.interval_seconds
@@ -107,7 +114,7 @@ resource "azapi_resource" "container_app" {
                   } : null
               }],
               [
-                for readiness_probe in try(cont.readiness_probes, []) : {
+                for readiness_probe in try(cont.readiness_probe, []) : {
                   failureThreshold    = readiness_probe.failure_count_threshold
                   initialDelaySeconds = readiness_probe.initial_delay
                   periodSeconds       = readiness_probe.interval_seconds
@@ -132,7 +139,7 @@ resource "azapi_resource" "container_app" {
                   } : null
               }],
               [
-                for startup_probe in try(cont.startup_probes, []) : {
+                for startup_probe in try(cont.startup_probe, []) : {
                   failureThreshold    = startup_probe.failure_count_threshold
                   initialDelaySeconds = startup_probe.initial_delay
                   periodSeconds       = startup_probe.interval_seconds

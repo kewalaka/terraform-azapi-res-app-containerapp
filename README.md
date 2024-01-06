@@ -203,7 +203,7 @@ object({
           name  = string
           value = string
         })))
-      })))
+      })), [])
       readiness_probe = optional(list(object({
         failure_count_threshold = optional(number)
         success_count_threshold = optional(number)
@@ -217,7 +217,7 @@ object({
           name  = string
           value = string
         })))
-      })))
+      })), [])
       startup_probe = optional(list(object({
         failure_count_threshold = optional(number)
         host                    = optional(string)
@@ -230,7 +230,7 @@ object({
           name  = string
           value = string
         })))
-      })))
+      })), [])
       volume_mounts = optional(list(object({
         name     = optional(string)
         path     = optional(string)
@@ -483,8 +483,8 @@ Default: `{}`
 ### <a name="input_secret"></a> [secret](#input\_secret)
 
 Description:
+- `key_vault_secret_id` - (Optional) The URL of the Azure Key Vault containing the secret. Required when `identity` is specified.
 - `identity` - (Optional) The identity associated with the secret.
-- `keyVaultUrl` - (Optional) The URL of the Azure Key Vault containing the secret. Required when `identity` is specified.
 - `name` - (Required) The Secret name.
 - `value` - (Required) The value for this secret.
 
@@ -492,10 +492,10 @@ Type:
 
 ```hcl
 set(object({
-    identity    = optional(string)
-    keyVaultUrl = optional(string)
-    name        = string
-    value       = string
+    identity            = optional(string)
+    key_vault_secret_id = optional(string)
+    name                = string
+    value               = string
   }))
 ```
 
