@@ -68,8 +68,8 @@ resource "azapi_resource" "container_app" {
       }
       environmentId = var.environment_resource_id
       template = {
-        container = [
-          for cont in var.template.containers : {
+        containers = [
+          for cont in var.template.container : {
             args    = cont.args
             command = cont.command
             env = cont.env != null ? [

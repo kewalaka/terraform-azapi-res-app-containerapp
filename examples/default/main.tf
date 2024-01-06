@@ -45,7 +45,7 @@ module "container_app" {
     target_port      = 80
   }
   template = {
-    containers = [{
+    container = [{
       image  = "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest"
       name   = "containerapps-helloworld"
       cpu    = "0.25"

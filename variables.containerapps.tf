@@ -24,7 +24,7 @@ variable "revision_mode" {
 
 variable "template" {
   type = object({
-    containers = list(object({
+    container = list(object({
       args    = optional(list(string))
       command = optional(list(string))
       cpu     = number
