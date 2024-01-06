@@ -46,16 +46,12 @@ module "container_app" {
   }
   template = {
     containers = [{
-      image = "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest"
-      name  = "containerapps-helloworld"
-      resources = {
-        cpu    = "0.25"
-        memory = "0.5Gi"
-      }
+      image  = "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest"
+      name   = "containerapps-helloworld"
+      cpu    = "0.25"
+      memory = "0.5Gi"
     }]
-    scale = {
-      minReplicas = 1
-      maxReplicas = 1
-    }
+    min_replicas = 1
+    max_replicas = 1
   }
 }

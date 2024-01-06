@@ -27,118 +27,65 @@ variable "template" {
     containers = list(object({
       args    = optional(list(string))
       command = optional(list(string))
+      cpu     = number
+      image   = string
+      memory  = string
+      name    = string
       env = optional(list(object({
-        name      = string
-        secretRef = optional(string)
-        value     = optional(string)
+        name        = string
+        secret_name = optional(string)
+        value       = optional(string)
       })))
-      image = string
-      name  = string
-      probes = optional(list(object({
-        failureThreshold = optional(number)
-        httpGet = optional(object({
-          host = optional(string)
-          httpHeaders = optional(list(object({
-            name  = string
-            value = string
-          })))
-          path   = optional(string)
-          port   = optional(number)
-          scheme = optional(string)
-        }))
-        initialDelaySeconds = optional(number)
-        periodSeconds       = optional(number)
-        successThreshold    = optional(number)
-        tcpSocket = optional(object({
-          host = optional(string)
-          port = optional(number)
-        }))
-        terminationGracePeriodSeconds = optional(number)
-        timeoutSeconds                = optional(number)
-        type                          = optional(string)
+      liveness_probe = optional(list(object({
+        failure_count_threshold = optional(number)
+        host                    = optional(string)
+        initial_delay           = optional(number)
+        interval_seconds        = optional(number)
+        path                    = optional(string)
+        port                    = number
+        timeout                 = optional(number)
+        transport               = string
+        header = optional(list(object({
+          name  = string
+          value = string
+        })))
       })))
-      resources = optional(object({
-        cpu    = optional(string)
-        memory = optional(string)
-      }))
-      volumeMounts = optional(list(object({
-        mountPath  = optional(string)
-        subPath    = optional(string)
-        volumeName = optional(string)
+      readiness_probe = optional(list(object({
+        failure_count_threshold = optional(number)
+        success_count_threshold = optional(number)
+        host                    = optional(string)
+        interval_seconds        = optional(number)
+        path                    = optional(string)
+        port                    = number
+        timeout                 = optional(number)
+        transport               = string
+        header = optional(list(object({
+          name  = string
+          value = string
+        })))
+      })))
+      startup_probe = optional(list(object({
+        failure_count_threshold = optional(number)
+        host                    = optional(string)
+        interval_seconds        = optional(number)
+        path                    = optional(string)
+        port                    = number
+        timeout                 = optional(number)
+        transport               = string
+        header = optional(list(object({
+          name  = string
+          value = string
+        })))
+      })))
+      volume_mounts = optional(list(object({
+        name     = optional(string)
+        path     = optional(string)
+        sub_path = optional(string)
       })))
     }))
-    initContainers = optional(list(object({
-      args    = optional(list(string))
-      command = optional(list(string))
-      env = optional(list(object({
-        name      = string
-        secretRef = optional(string)
-        value     = optional(string)
-      })))
-      image = string
-      name  = string
-      resources = optional(object({
-        cpu    = optional(string)
-        memory = optional(string)
-      }))
-      volumeMounts = optional(list(object({
-        mountPath  = optional(string)
-        subPath    = optional(string)
-        volumeName = optional(string)
-      })))
-    })))
-    revisionSuffix = optional(string, null)
-    scale = optional(object({
-      maxReplicas = optional(number)
-      minReplicas = optional(number)
-      rules = optional(list(object({
-        azureQueue = optional(object({
-          auth = optional(list(object({
-            secretRef        = string
-            triggerParameter = string
-          })))
-          queueLength = optional(number)
-          queueName   = optional(string)
-        }))
-        custom = optional(object({
-          auth = optional(list(object({
-            secretRef        = string
-            triggerParameter = string
-          })))
-          metadata = optional(map(string))
-          type     = optional(string)
-        }))
-        http = optional(object({
-          auth = optional(list(object({
-            secretRef        = string
-            triggerParameter = string
-          })))
-          metadata = optional(map(string))
-        }))
-        name = optional(string)
-        tcp = optional(object({
-          auth = optional(list(object({
-            secretRef        = string
-            triggerParameter = string
-          })))
-          metadata = optional(map(string))
-        }))
-      })))
-    }))
-    serviceBinds = optional(list(object({
-      name      = string
-      serviceId = string
-    })))
-    volumes = optional(list(object({
-      mountOptions = string
-      name         = string
-      secrets = optional(list(object({
-        path      = string
-        secretRef = string
-      })))
-      storageName = string
-      storageType = string
-    })))
+    max_replicas    = optional(number)
+    min_replicas    = optional(number)
+    revision_suffix = optional(string, null)
   })
   description = <<-EOT
 

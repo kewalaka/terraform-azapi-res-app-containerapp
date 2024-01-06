@@ -66,8 +66,116 @@ resource "azapi_resource" "container_app" {
         secrets = var.secret
         #service              = var.service
       }
-      environmentId       = var.environment_resource_id
-      template            = var.template
+      environmentId = var.environment_resource_id
+      template = {
+        container = [
+          for cont in var.template.containers : {
+            args    = cont.args
+            command = cont.command
+            env = cont.env != null ? [
+              for e in cont.env : {
+                name      = e.name
+                secretRef = e.secret_name
+                value     = e.value
+              }
+            ] : null
+            image = cont.image
+            name  = cont.name
+            probes = setunion(
+              [
+                for liveness_probe in try(cont.liveness_probes, []) : {
+                  failureThreshold    = liveness_probe.failure_count_threshold
+                  initialDelaySeconds = liveness_probe.initial_delay
+                  periodSeconds       = liveness_probe.interval_seconds
+                  timeoutSeconds      = liveness_probe.timeout
+                  type                = "Liveness"
+                  httpGet = liveness_probe.transport == "HTTP" || liveness_probe.transport == "HTTPS" ? {
+                    host   = liveness_probe.host
+                    path   = liveness_probe.path
+                    port   = liveness_probe.port
+                    scheme = liveness_probe.transport
+                    httpHeaders = liveness_probe.header != null ? [
+                      for header in liveness_probe.header : {
+                        name  = header.name
+                        value = header.value
+                      }
+                    ] : null
+                  } : null
+                  tcpSocket = liveness_probe.transport == "TCP" ? {
+                    host = liveness_probe.host
+                    port = liveness_probe.port
+                  } : null
+              }],
+              [
+                for readiness_probe in try(cont.readiness_probes, []) : {
+                  failureThreshold    = readiness_probe.failure_count_threshold
+                  initialDelaySeconds = readiness_probe.initial_delay
+                  periodSeconds       = readiness_probe.interval_seconds
+                  successThreshold    = readiness_probe.success_count_threshold
+                  timeoutSeconds      = readiness_probe.timeout
+                  type                = "Readiness"
+                  httpGet = readiness_probe.transport == "HTTP" || readiness_probe.transport == "HTTPS" ? {
+                    host   = readiness_probe.host
+                    path   = readiness_probe.path
+                    port   = readiness_probe.port
+                    scheme = readiness_probe.transport
+                    httpHeaders = readiness_probe.header != null ? [
+                      for header in readiness_probe.header : {
+                        name  = header.name
+                        value = header.value
+                      }
+                    ] : null
+                  } : null
+                  tcpSocket = readiness_probe.transport == "TCP" ? {
+                    host = readiness_probe.host
+                    port = readiness_probe.port
+                  } : null
+              }],
+              [
+                for startup_probe in try(cont.startup_probes, []) : {
+                  failureThreshold    = startup_probe.failure_count_threshold
+                  initialDelaySeconds = startup_probe.initial_delay
+                  periodSeconds       = startup_probe.interval_seconds
+                  timeoutSeconds      = startup_probe.timeout
+                  type                = "startup"
+                  httpGet = startup_probe.transport == "HTTP" || startup_probe.transport == "HTTPS" ? {
+                    host   = startup_probe.host
+                    path   = startup_probe.path
+                    port   = startup_probe.port
+                    scheme = startup_probe.transport
+                    httpHeaders = startup_probe.header != null ? [
+                      for header in startup_probe.header : {
+                        name  = header.name
+                        value = header.value
+                      }
+                    ] : null
+                  } : null
+                  tcpSocket = startup_probe.transport == "TCP" ? {
+                    host = startup_probe.host
+                    port = startup_probe.port
+                  } : null
+              }]
+            )
+            resources = {
+              cpu    = cont.cpu
+              memory = cont.memory
+            }
+            volumeMounts = cont.volume_mounts != null ? [
+              for vm in cont.volume_mounts : {
+                mountPath  = vm.path
+                subPath    = vm.sub_path
+                volumeName = vm.name
+              }
+            ] : null
+          }
+
+        ]
+        revisionSuffix = var.template.revision_suffix
+        scale = {
+          minReplicas = var.template.min_replicas
+          maxReplicas = var.template.max_replicas
+        }
+      }
       workloadProfileName = var.workload_profile_name
     }
   })
