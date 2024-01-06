@@ -48,7 +48,7 @@ resource "azapi_resource" "managed_environment" {
 module "node_app" {
   source = "../../"
   # source             = "Azure/avm-<res/ptn>-<name>/azurerm"
-  name                    = module.naming.container_app.name_unique
+  name                    = "${module.naming.container_app.name_unique}-node"
   resource_group_name     = azurerm_resource_group.this.name
   environment_resource_id = azapi_resource.managed_environment.id
 
@@ -83,7 +83,7 @@ module "node_app" {
 module "python_app" {
   source = "../../"
   # source             = "Azure/avm-<res/ptn>-<name>/azurerm"
-  name                    = module.naming.container_app.name_unique
+  name                    = "${module.naming.container_app.name_unique}-python"
   resource_group_name     = azurerm_resource_group.this.name
   environment_resource_id = azapi_resource.managed_environment.id
 
