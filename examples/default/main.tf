@@ -8,16 +8,6 @@ terraform {
   }
 }
 
-variable "enable_telemetry" {
-  type        = bool
-  default     = true
-  description = <<DESCRIPTION
-This variable controls whether or not telemetry is enabled for the module.
-For more information see https://aka.ms/avm/telemetryinfo.
-If it is set to false, then no telemetry will be collected.
-DESCRIPTION
-}
-
 provider "azurerm" {
   skip_provider_registration = true
   features {}
@@ -26,7 +16,7 @@ provider "azurerm" {
 # This ensures we have unique CAF compliant names for our resources.
 module "naming" {
   source  = "Azure/naming/azurerm"
-  version = "0.3.0"
+  version = "0.4.0"
 }
 
 # This is required for resource modules
@@ -36,7 +26,7 @@ resource "azurerm_resource_group" "this" {
 }
 
 resource "azurerm_container_app_environment" "this" {
-  name                = replace(azurerm_resource_group.this.name, "rg-", "cae-") # TODO remove workaround pending PR - https://github.com/Azure/terraform-azurerm-naming/pull/103
+  name                = module.naming.container_app_environment.name_unique
   location            = azurerm_resource_group.this.location
   resource_group_name = azurerm_resource_group.this.name
 }
@@ -45,31 +35,23 @@ resource "azurerm_container_app_environment" "this" {
 module "container_app" {
   source = "../../"
   # source             = "Azure/avm-<res/ptn>-<name>/azurerm"
-  name                                  = replace(azurerm_resource_group.this.name, "rg-", "ca-")
-  resource_group_name                   = azurerm_resource_group.this.name
-  container_app_environment_resource_id = azurerm_container_app_environment.this.id
+  name                    = module.naming.container_app.name_unique
+  resource_group_name     = azurerm_resource_group.this.name
+  environment_resource_id = azurerm_container_app_environment.this.id
 
   workload_profile_name = "Consumption"
-  container_app = {
-    name = "helloworld"
-    configuration = {
-      ingress = {
-        external = true
-      }
-    }
-    template = {
-      containers = [{
-        image = "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest"
-        name  = "containerapps-helloworld"
-        resources = {
-          cpu    = "0.25"
-          memory = "0.5Gi"
-        }
-      }]
-      scale = {
-        minReplicas = 1
-        maxReplicas = 1
-      }
-    }
+  ingress = {
+    external_enabled = true
+    target_port      = 80
+  }
+  template = {
+    container = [{
+      image  = "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest"
+      name   = "containerapps-helloworld"
+      cpu    = "0.25"
+      memory = "0.5Gi"
+    }]
+    min_replicas = 1
+    max_replicas = 1
   }
 }

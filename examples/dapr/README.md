@@ -9,23 +9,13 @@ terraform {
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = ">= 3.7.0, < 4.0.0"
+      version = ">= 3.71.0, < 4.0.0"
     }
     azapi = {
       source  = "Azure/azapi"
       version = "1.9.0"
     }
   }
-}
-
-variable "enable_telemetry" {
-  type        = bool
-  default     = true
-  description = <<DESCRIPTION
-This variable controls whether or not telemetry is enabled for the module.
-For more information see https://aka.ms/avm/telemetryinfo.
-If it is set to false, then no telemetry will be collected.
-DESCRIPTION
 }
 
 provider "azurerm" {
@@ -36,7 +26,7 @@ provider "azurerm" {
 # This ensures we have unique CAF compliant names for our resources.
 module "naming" {
   source  = "Azure/naming/azurerm"
-  version = "0.3.0"
+  version = "0.4.0"
 }
 
 # This is required for resource modules
@@ -46,7 +36,7 @@ resource "azurerm_resource_group" "this" {
 }
 
 resource "azapi_resource" "managed_environment" {
-  name      = replace(azurerm_resource_group.this.name, "rg-", "cae-") # TODO remove workaround pending PR - https://github.com/Azure/terraform-azurerm-naming/pull/103
+  name      = module.naming.container_app_environment.name_unique
   location  = azurerm_resource_group.this.location
   parent_id = azurerm_resource_group.this.id
   type      = "Microsoft.App/managedEnvironments@2022-03-01"
@@ -61,80 +51,64 @@ resource "azapi_resource" "managed_environment" {
 }
 
 # This is the module call
-module "node-app" {
+module "node_app" {
   source = "../../"
   # source             = "Azure/avm-<res/ptn>-<name>/azurerm"
-  name                                  = replace(azurerm_resource_group.this.name, "rg-", "ca-nodeapp-") # TODO remove workaround pending PR - https://github.com/Azure/terraform-azurerm-naming/pull/103
-  resource_group_name                   = azurerm_resource_group.this.name
-  container_app_environment_resource_id = azapi_resource.managed_environment.id
+  name                    = "${module.naming.container_app.name_unique}-node"
+  resource_group_name     = azurerm_resource_group.this.name
+  environment_resource_id = azapi_resource.managed_environment.id
 
   workload_profile_name = ""
-  container_app = {
-    name = "nodeapp"
-    configuration = {
-      ingress = {
-        external   = false
-        targetPort = 3000
-      }
-      dapr = {
-        enabled     = true
-        appId       = "nodeapp"
-        appProtocol = "http"
-        appPort     = 3000
-      }
-    }
-    template = {
-      containers = [{
-        image = "dapriosamples/hello-k8s-node:latest"
-        name  = "hello-k8s-node"
-        env = [{
-          name  = "APP_PORT"
-          value = 3000
-        }]
-        resources = {
-          cpu    = 0.5
-          memory = "1.0Gi"
-        }
-      }]
-      scale = {
-        minReplicas = 1
-        maxReplicas = 1
-      }
-    }
+  ingress = {
+    external_enabled = false
+    target_port      = 3000
   }
+  dapr = {
+    enabled      = true
+    app_id       = "nodeapp"
+    app_protocol = "http"
+    app_port     = 3000
+  }
+  template = {
+    container = [{
+      image  = "dapriosamples/hello-k8s-node:latest"
+      name   = "hello-k8s-node"
+      cpu    = 0.5
+      memory = "1.0Gi"
+      env = [{
+        name  = "APP_PORT"
+        value = 3000
+      }]
+    }]
+    min_replicas = 1
+    max_replicas = 1
+  }
+
 }
 
-module "python-app" {
+module "python_app" {
   source = "../../"
   # source             = "Azure/avm-<res/ptn>-<name>/azurerm"
-  name                                  = replace(azurerm_resource_group.this.name, "rg-", "ca-pythonapp-") # TODO remove workaround pending PR - https://github.com/Azure/terraform-azurerm-naming/pull/103
-  resource_group_name                   = azurerm_resource_group.this.name
-  container_app_environment_resource_id = azapi_resource.managed_environment.id
+  name                    = "${module.naming.container_app.name_unique}-python"
+  resource_group_name     = azurerm_resource_group.this.name
+  environment_resource_id = azapi_resource.managed_environment.id
 
   workload_profile_name = ""
-  container_app = {
-    name = "pythonapp"
-    configuration = {
-      dapr = {
-        enabled = true
-        appId   = "pythonapp"
-      }
-    }
-    template = {
-      containers = [{
-        image = "dapriosamples/hello-k8s-python:latest"
-        name  = "hello-k8s-python"
-        resources = {
-          cpu    = 0.5
-          memory = "1.0Gi"
-        }
-      }]
-      scale = {
-        minReplicas = 1
-        maxReplicas = 1
-      }
-    }
+  dapr = {
+    enabled = true
+    app_id  = "pythonapp"
   }
+  template = {
+    container = [{
+      image  = "dapriosamples/hello-k8s-python:latest"
+      name   = "hello-k8s-python"
+      cpu    = 0.5
+      memory = "1.0Gi"
+    }]
+    min_replicas = 1
+    max_replicas = 1
+  }
+
 }
 ```
 
@@ -147,7 +121,7 @@ The following requirements are needed by this module:
 
 - <a name="requirement_azapi"></a> [azapi](#requirement\_azapi) (1.9.0)
 
-- <a name="requirement_azurerm"></a> [azurerm](#requirement\_azurerm) (>= 3.7.0, < 4.0.0)
+- <a name="requirement_azurerm"></a> [azurerm](#requirement\_azurerm) (>= 3.71.0, < 4.0.0)
 
 ## Providers
 
@@ -155,7 +129,7 @@ The following providers are used by this module:
 
 - <a name="provider_azapi"></a> [azapi](#provider\_azapi) (1.9.0)
 
-- <a name="provider_azurerm"></a> [azurerm](#provider\_azurerm) (>= 3.7.0, < 4.0.0)
+- <a name="provider_azurerm"></a> [azurerm](#provider\_azurerm) (>= 3.71.0, < 4.0.0)
 
 ## Resources
 
@@ -171,17 +145,7 @@ No required inputs.
 
 ## Optional Inputs
 
-The following input variables are optional (have default values):
-
-### <a name="input_enable_telemetry"></a> [enable\_telemetry](#input\_enable\_telemetry)
-
-Description: This variable controls whether or not telemetry is enabled for the module.  
-For more information see https://aka.ms/avm/telemetryinfo.  
-If it is set to false, then no telemetry will be collected.
-
-Type: `bool`
-
-Default: `true`
+No optional inputs.
 
 ## Outputs
 
@@ -195,15 +159,15 @@ The following Modules are called:
 
 Source: Azure/naming/azurerm
 
-Version: 0.3.0
+Version: 0.4.0
 
-### <a name="module_node-app"></a> [node-app](#module\_node-app)
+### <a name="module_node_app"></a> [node\_app](#module\_node\_app)
 
 Source: ../../
 
 Version:
 
-### <a name="module_python-app"></a> [python-app](#module\_python-app)
+### <a name="module_python_app"></a> [python\_app](#module\_python\_app)
 
 Source: ../../
 

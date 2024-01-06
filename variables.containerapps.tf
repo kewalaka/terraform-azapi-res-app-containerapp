@@ -1,222 +1,323 @@
-variable "name" {
+variable "environment_resource_id" {
   type        = string
-  description = "Name for the resource."
+  description = "The ID of the Container App Environment to host this Container App."
+  nullable    = false
 }
 
-variable "location" {
+variable "max_inactive_revisions" {
+  type        = number
+  description = "(Optional). Max inactive revisions a Container App can have."
+  default     = 2
+}
+
+variable "revision_mode" {
   type        = string
-  description = "Azure region where the resource should be deployed."
+  description = "(Required) The revisions operational mode for the Container App. Possible values include `Single` and `Multiple`. In `Single` mode, a single revision is in operation at any given time. In `Multiple` mode, more than one revision can be active at a time and can be configured with load distribution via the `traffic_weight` block in the `ingress` configuration."
+  default     = "Single"
+}
+
+# variable "service" {
+#   type        = string
+#   description = "Container App to be a dev Container App Service"
+#   default     = ""
+# }
+
+variable "template" {
+  type = object({
+    max_replicas    = optional(number)
+    min_replicas    = optional(number)
+    revision_suffix = optional(string, null)
+
+    container = list(object({
+      args    = optional(list(string))
+      command = optional(list(string))
+      cpu     = number
+      image   = string
+      memory  = string
+      name    = string
+      env = optional(list(object({
+        name        = string
+        secret_name = optional(string)
+        value       = optional(string)
+      })))
+      liveness_probe = optional(list(object({
+        failure_count_threshold          = optional(number)
+        host                             = optional(string)
+        initial_delay                    = optional(number)
+        interval_seconds                 = optional(number)
+        path                             = optional(string)
+        port                             = number
+        termination_grace_period_seconds = optional(number)
+        timeout                          = optional(number)
+        transport                        = string
+        header = optional(list(object({
+          name  = string
+          value = string
+        })))
+      })), [])
+      readiness_probe = optional(list(object({
+        failure_count_threshold = optional(number)
+        success_count_threshold = optional(number)
+        host                    = optional(string)
+        interval_seconds        = optional(number)
+        path                    = optional(string)
+        port                    = number
+        timeout                 = optional(number)
+        transport               = string
+        header = optional(list(object({
+          name  = string
+          value = string
+        })))
+      })), [])
+      startup_probe = optional(list(object({
+        failure_count_threshold          = optional(number)
+        host                             = optional(string)
+        interval_seconds                 = optional(number)
+        path                             = optional(string)
+        port                             = number
+        termination_grace_period_seconds = optional(number)
+        timeout                          = optional(number)
+        transport                        = string
+        header = optional(list(object({
+          name  = string
+          value = string
+        })))
+      })), [])
+      volume_mounts = optional(list(object({
+        name     = optional(string)
+        path     = optional(string)
+        sub_path = optional(string)
+      })))
+    }))
+  })
+  description = <<-EOT
+
+Template properties:
+
+- `maxReplicas` - (Optional) The maximum number of replicas for this container.
+- `minReplicas` - (Optional) The minimum number of replicas for this container.
+- `revisionSuffix` - (Optional) The suffix for the revision. This value must be unique for the lifetime of the Resource. If omitted the service will use a hash function to create one.
+
+---
+`containers` block supports the following:
+- `args` - (Optional) A list of extra arguments to pass to the container.
+- `command` - (Optional) A command to pass to the container to override the default. This is provided as a list of command line elements without spaces.
+- `cpu` - (Required) The amount of vCPU to allocate to the container. Possible values include `0.25`, `0.5`, `0.75`, `1.0`, `1.25`, `1.5`, `1.75`, and `2.0`.
+- `image` - (Required) The image to use to create the container.
+- `memory` - (Required) The amount of memory to allocate to the container. Possible values are `0.5Gi`, `1Gi`, `1.5Gi`, `2Gi`, `2.5Gi`, `3Gi`, `3.5Gi`, and `4Gi`.
+- `name` - (Required) The name of the container.
+- `env` - (Optional) List of environment variables for the container.
+  - `name` - (Required) The name of the environment variable for the container.
+  - `secret_name` - (Optional) The name of the secret that contains the value for this environment variable.
+  - `value` - (Optional) The value for this environment variable.
+- `liveness_probe` - (Optional) List of liveness probes for the container.
+  - `failure_count_threshold` - (Optional) The number of consecutive failures required to consider this probe as failed. Possible values are between `1` and `10`. Defaults to `3`.
+  - `host` - (Optional) The probe hostname. Defaults to the pod IP address. Setting a value for `Host` in `headers` can be used to override this for `HTTP` and `HTTPS` type probes.
+  - `initial_delay` - (Optional) The time in seconds to wait after the container has started before the probe is started.
+  - `interval_seconds` - (Optional) How often, in seconds, the probe should run. Possible values are in the range `1`.
+  - `path` - (Optional) The URI to use for http type probes. Not valid for `TCP` type probes. Defaults to `/`.
+  - `port` - (Required) The port number on which to connect. Possible values are between `1` and `65535`.
+  - `termination_grace_period_seconds` - The time in seconds after the container is sent the termination signal before the process if forcibly killed.  
+  - `timeout` - (Optional) Time in seconds after which the probe times out. Possible values are in the range `1`.
+  - `transport` - (Required) Type of probe. Possible values are `TCP`, `HTTP`, and `HTTPS`.
+  - `header` - (Optional) List of HTTP headers for the probe.
+    - `name` - (Required) The HTTP Header Name.
+    - `value` - (Required) The HTTP Header value.
+- `readiness_probe` - (Optional) List of readiness probes for the container.
+  - `failure_count_threshold` - (Optional) The number of consecutive failures required to consider this probe as failed. Possible values are between `1` and `10`. Defaults to `3`.
+  - `success_count_threshold` - (Optional) The number of consecutive successful responses required to consider this probe as successful. Possible values are between `1` and `10`. Defaults to `3`.
+  - `host` - (Optional) The probe hostname. Defaults to the pod IP address. Setting a value for `Host` in `headers` can be used to override this for `HTTP` and `HTTPS` type probes.
+  - `initial_delay` - (Optional) The time in seconds to wait after the container has started before the probe is started.
+  - `interval_seconds` - (Optional) How often, in seconds, the probe should run. Possible values are in the range `1`.
+  - `path` - (Optional) The URI to use for http type probes. Not valid for `TCP` type probes. Defaults to `/`.
+  - `port` - (Required) The port number on which to connect. Possible values are between `1` and `65535`.
+  - `timeout` - (Optional) Time in seconds after which the probe times out. Possible values are in the range `1`.
+  - `transport` - (Required) Type of probe. Possible values are `TCP`, `HTTP`, and `HTTPS`.
+  - `header` - (Optional) List of HTTP headers for the probe.
+    - `name` - (Required) The HTTP Header Name.
+    - `value` - (Required) The HTTP Header value.
+- `startup_probe` - (Optional) List of readiness probes for the container.
+  - `failure_count_threshold` - (Optional) The number of consecutive failures required to consider this probe as failed. Possible values are between `1` and `10`. Defaults to `3`.
+  - `host` - (Optional) The probe hostname. Defaults to the pod IP address. Setting a value for `Host` in `headers` can be used to override this for `HTTP` and `HTTPS` type probes.
+  - `initial_delay` - (Optional) The time in seconds to wait after the container has started before the probe is started.
+  - `interval_seconds` - (Optional) How often, in seconds, the probe should run. Possible values are in the range `1`.
+  - `path` - (Optional) The URI to use for http type probes. Not valid for `TCP` type probes. Defaults to `/`.
+  - `port` - (Required) The port number on which to connect. Possible values are between `1` and `65535`.
+  - `termination_grace_period_seconds` - The time in seconds after the container is sent the termination signal before the process if forcibly killed.
+  - `timeout` - (Optional) Time in seconds after which the probe times out. Possible values are in the range `1`.
+  - `transport` - (Required) Type of probe. Possible values are `TCP`, `HTTP`, and `HTTPS`.
+  - `header` - (Optional) List of HTTP headers for the probe.
+    - `name` - (Required) The HTTP Header Name.
+    - `value` - (Required) The HTTP Header value.
+
+EOT
+  nullable    = false
+}
+
+variable "dapr" {
+  type = object({
+    app_id                = optional(string)
+    app_port              = optional(number)
+    app_protocol          = optional(string, "http")
+    enable_api_logging    = optional(bool, false)
+    enabled               = optional(bool, false)
+    http_max_request_size = optional(number)
+    http_read_buffer_size = optional(number)
+    log_level             = optional(string)
+  })
   default     = null
+  description = <<-EOT
+    - `app_id` - (Optional) The Dapr Application Identifier.
+    - `app_port` - (Optional) The port which the application is listening on. This is the same as the `ingress` port.
+    - `app_protocol` - (Optional) The protocol for the app. Possible values include `http` and `grpc`. Defaults to `http`.
+    - `enable_api_logging` - (Optional) Enable API logging. Defaults to `false`.
+    - `enabled` - (Optional) Enable Dapr for the application. Defaults to `false`.
+    - `http_max_request_size` - (Optional) The maximum allowed HTTP request size in bytes.
+    - `http_read_buffer_size` - (Optional) The size of the buffer used for reading the HTTP request body in bytes.
+    - `log_level` - (Optional) The log level for Dapr. Possible values include "debug", "info", "warn", "error", and "fatal".
+  EOT
 }
 
-variable "tags" {
-  type        = map(string)
-  description = "Custom tags to apply to the resource."
-  default     = {}
+variable "ingress" {
+  type = object({
+    allow_insecure_connections = optional(bool, false)
+    client_certificate_mode    = optional(string, "Ignore")
+    cors_policy = optional(object({
+      allow_credentials = optional(bool, false)
+      allowed_headers   = optional(list(string))
+      allowed_methods   = optional(list(string))
+      allowed_origins   = optional(list(string))
+      expose_headers    = optional(list(string))
+      max_age           = optional(number)
+    }), null)
+    custom_domain = optional(list(object({
+      certificate_binding_type = optional(string)
+      certificate_id           = optional(string)
+      name                     = optional(string)
+    })), null)
+    exposed_port     = optional(number, 0)
+    external_enabled = optional(bool, false)
+    ip_restrictions = optional(list(object({
+      action      = optional(string)
+      description = optional(string)
+      ip_range    = optional(string)
+      name        = optional(string)
+    })))
+    sticky_sessions = optional(object({
+      affinity = optional(string, "none")
+    }))
+    target_port = optional(number)
+    traffic_weight = optional(list(object({
+      label           = optional(string)
+      latest_revision = optional(bool, true)
+      revision_suffix = optional(string)
+      percentage      = optional(number, 100)
+    })))
+    transport = optional(string, "Auto")
+  })
+  default     = null
+  description = <<-EOT
+This object defines the ingress properties for the container app:
+
+---
+- `allow_insecure_connections` - (Optional) Should this ingress allow insecure connections? Defaults to `false`.
+- `client_certificate_mode` - (Optional) The mode for client certificate authentication. Possible values include `optional` and `required`. Defaults to `Ignore`.
+- `exposed_port` - (Optional) The exposed port on the container for the Ingress traffic. Defaults to `0`.
+- `external_enabled` - (Optional) Are connections to this Ingress from outside the Container App Environment enabled? Defaults to `false`.
+- `target_port` - (Required) The target port on the container for the Ingress traffic. Defaults to `Auto`.
+- `transport` - (Optional) The transport method for the Ingress. Possible values include `auto`, `http`, `http2`, and `tcp`. Defaults to `Auto`.
+
+---
+`cors_policy` block supports the following:
+- `allow_credentials` - (Optional) Indicates whether the browser should include credentials when making a request. Defaults to `false`.
+- `allowed_headers` - (Optional) List of headers that can be used when making the actual request.
+- `allowed_methods` - (Optional) List of HTTP methods that can be used when making the actual request.
+- `allowed_origins` - (Optional) List of origins that are allowed to access the resource.
+- `expose_headers` - (Optional) List of response headers that can be exposed when making the actual request.
+- `max_age` - (Optional) The maximum number of seconds the results of a preflight request can be cached.
+
+---
+`custom_domain` block supports the following:
+- `certificate_binding_type` - (Optional) The Binding type. Possible values include `Disabled` and `SniEnabled`. Defaults to `Disabled`.
+- `certificate_id` - (Optional) The ID of the Container App Environment Certificate.
+- `name` - (Optional) The hostname of the Certificate. Must be the CN or a named SAN in the certificate.
+
+---
+`ip_restrictions` block supports the following:
+- `action` - (Optional) The action to take when the IP security restriction is triggered. Possible values include `allow` and `deny`.
+- `description` - (Optional) A description for the IP security restriction.
+- `ip_range` - (Optional) The IP address range for the security restriction.
+- `name` - (Optional) The name for the IP security restriction.
+
+---
+`sticky_sessions` block supports the following:
+- `affinity` - (Optional) The affinity type for sticky sessions. Possible values include `None`, `ClientIP`, and `Server`.
+
+---
+`traffic_weight` block supports the following:
+- `label` - (Optional) The label to apply to the revision as a name prefix for routing traffic.
+- `latest_revision` - (Optional) This traffic Weight relates to the latest stable Container Revision.
+- `revision_suffix` - (Optional) The suffix string to which this `traffic_weight` applies.
+- `percentage` - (Required) The percentage of traffic which should be sent according to this configuration.
+
+EOT
 }
 
-variable "user_identity_resource_id" {
-  type        = string
-  description = "The managed identity definition for this resource."
-  default     = ""
+variable "registry" {
+  type = list(object({
+    identity             = optional(string)
+    password_secret_name = optional(string)
+    server               = optional(string)
+    username             = optional(string)
+  }))
+  default     = null
+  description = <<-EOT
+
+    - `identity` - (Optional) Resource ID for the User Assigned Managed identity to use when pulling from the Container Registry.
+    - `password_secret_name ` - (Optional) The name of the Secret Reference containing the password value for this user on the Container Registry, `username` must also be supplied.
+    - `server` - (Optional) The hostname for the Container Registry.
+    - `username` - (Optional) The username to use for this Container Registry, `password_secret_name` must also be supplied.
+
+EOT
 }
 
-variable "container_app_environment_resource_id" {
-  type        = string
-  description = "Resource ID of environment."
+
+variable "secret" {
+  type = set(object({
+    identity            = optional(string)
+    key_vault_secret_id = optional(string)
+    name                = string
+    value               = string
+  }))
+  default     = null
+  description = <<-EOT
+
+ - `key_vault_secret_id` - (Optional) The URL of the Azure Key Vault containing the secret. Required when `identity` is specified.
+ - `identity` - (Optional) The identity associated with the secret.
+ - `name` - (Required) The Secret name.
+ - `value` - (Required) The value for this secret.
+
+EOT
+}
+
+variable "timeouts" {
+  type = object({
+    create = optional(string)
+    delete = optional(string)
+    read   = optional(string)
+    update = optional(string)
+  })
+  default     = null
+  description = <<-EOT
+ - `create` - (Defaults to 30 minutes) Used when creating the Container App.
+ - `delete` - (Defaults to 30 minutes) Used when deleting the Container App.
+ - `read` - (Defaults to 5 minutes) Used when retrieving the Container App.
+ - `update` - (Defaults to 30 minutes) Used when updating the Container App.
+EOT
 }
 
 variable "workload_profile_name" {
   type        = string
   description = "Workload profile name to pin for container app execution.  If not set, workload profiles are not used."
   default     = null
-}
-
-variable "container_app" {
-  description = "Specifies the container apps in the managed environment."
-  type = object({
-    name          = string
-    revision_mode = optional(string, "Single")
-
-    dapr = optional(object({
-      appId              = optional(string)
-      appPort            = optional(number)
-      appProtocol        = optional(string)
-      enableApiLogging   = optional(bool)
-      enabled            = optional(bool)
-      httpMaxRequestSize = optional(number)
-      httpReadBufferSize = optional(number)
-      logLevel           = optional(string)
-    }))
-    ingress = optional(object({
-      allowInsecure         = optional(bool)
-      clientCertificateMode = optional(string)
-      corsPolicy = optional(object({
-        allowCredentials = optional(bool)
-        allowedHeaders   = optional(list(string))
-        allowedMethods   = optional(list(string))
-        allowedOrigins   = optional(list(string))
-        exposeHeaders    = optional(list(string))
-        maxAge           = optional(number)
-      }))
-      customDomains = optional(list(object({
-        bindingType   = optional(string)
-        certificateId = optional(string)
-        name          = optional(string)
-      })))
-      exposedPort = optional(number)
-      external    = optional(bool)
-      ipSecurityRestrictions = optional(list(object({
-        action         = optional(string)
-        description    = optional(string)
-        ipAddressRange = optional(string)
-        name           = optional(string)
-      })))
-      stickySessions = optional(object({
-        affinity = optional(string)
-      }))
-      targetPort = optional(number)
-      traffic = optional(list(object({
-        label          = optional(string)
-        latestRevision = optional(bool)
-        revisionName   = optional(string)
-        weight         = optional(number)
-      })))
-      transport = optional(string)
-    }))
-    maxInactiveRevisions = optional(number)
-    registries = optional(list(object({
-      identity          = optional(string)
-      passwordSecretRef = optional(string)
-      server            = optional(string)
-      username          = optional(string)
-    })))
-    secrets = optional(list(object({
-      identity    = optional(string)
-      keyVaultUrl = optional(string)
-      name        = string
-      value       = string
-    })))
-    service = optional(object({
-      type = optional(string)
-    }))
-
-    template = object({
-      containers = list(object({
-        args    = optional(list(string))
-        command = optional(list(string))
-        env = optional(list(object({
-          name      = string
-          secretRef = optional(string)
-          value     = optional(string)
-        })))
-        image = string
-        name  = string
-        probes = optional(list(object({
-          failureThreshold = optional(number)
-          httpGet = optional(object({
-            host = optional(string)
-            httpHeaders = optional(list(object({
-              name  = string
-              value = string
-            })))
-            path   = optional(string)
-            port   = optional(number)
-            scheme = optional(string)
-          }))
-          initialDelaySeconds = optional(number)
-          periodSeconds       = optional(number)
-          successThreshold    = optional(number)
-          tcpSocket = optional(object({
-            host = optional(string)
-            port = optional(number)
-          }))
-          terminationGracePeriodSeconds = optional(number)
-          timeoutSeconds                = optional(number)
-          type                          = optional(string)
-        })))
-        resources = optional(object({
-          cpu    = optional(string)
-          memory = optional(string)
-        }))
-        volumeMounts = optional(list(object({
-          mountPath  = optional(string)
-          subPath    = optional(string)
-          volumeName = optional(string)
-        })))
-      }))
-      initContainers = optional(list(object({
-        args    = optional(list(string))
-        command = optional(list(string))
-        env = optional(list(object({
-          name      = string
-          secretRef = optional(string)
-          value     = optional(string)
-        })))
-        image = string
-        name  = string
-        resources = optional(object({
-          cpu    = optional(string)
-          memory = optional(string)
-        }))
-        volumeMounts = optional(list(object({
-          mountPath  = optional(string)
-          subPath    = optional(string)
-          volumeName = optional(string)
-        })))
-      })))
-      revisionSuffix = optional(string, null)
-      scale = optional(object({
-        maxReplicas = optional(number)
-        minReplicas = optional(number)
-        rules = optional(list(object({
-          azureQueue = optional(object({
-            auth = optional(list(object({
-              secretRef        = string
-              triggerParameter = string
-            })))
-            queueLength = optional(number)
-            queueName   = optional(string)
-          }))
-          custom = optional(object({
-            auth = optional(list(object({
-              secretRef        = string
-              triggerParameter = string
-            })))
-            metadata = optional(map(string))
-            type     = optional(string)
-          }))
-          http = optional(object({
-            auth = optional(list(object({
-              secretRef        = string
-              triggerParameter = string
-            })))
-            metadata = optional(map(string))
-          }))
-          name = optional(string)
-          tcp = optional(object({
-            auth = optional(list(object({
-              secretRef        = string
-              triggerParameter = string
-            })))
-            metadata = optional(map(string))
-          }))
-        })))
-      }))
-      serviceBinds = optional(list(object({
-        name      = string
-        serviceId = string
-      })))
-      volumes = optional(list(object({
-        mountOptions = string
-        name         = string
-        secrets = optional(list(object({
-          path      = string
-          secretRef = string
-        })))
-        storageName = string
-        storageType = string
-      })))
-    })
-  })
 }
