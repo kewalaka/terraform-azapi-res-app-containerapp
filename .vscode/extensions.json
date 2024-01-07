@@ -4,6 +4,7 @@
     "editorconfig.editorconfig",
     "azapi-vscode.azapi",
     "ms-vscode-remote.remote-wsl",
-    "ms-vscode-remote.remote-containers"
+    "ms-vscode-remote.remote-containers",
+    "davidanson.vscode-markdownlint"
   ]
 }
