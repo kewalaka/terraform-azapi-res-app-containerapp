@@ -279,6 +279,18 @@ variable "registry" {
     - `username` - (Optional) The username to use for this Container Registry, `password_secret_name` must also be supplied.
 
 EOT
+
+  validation {
+    condition = var.registry == null || can(
+      [for r in var.registry :
+        length(compact([
+          r.identity,
+          r.username != null && r.password_secret_name != null ? "valid" : null
+        ])) == 1
+      ]
+    )
+    error_message = "Either 'identity' should be provided or both 'username' and 'password_secret_name' must be supplied for each entry in the 'registry' list."
+  }
 }
 
 
@@ -287,17 +299,24 @@ variable "secret" {
     identity            = optional(string)
     key_vault_secret_id = optional(string)
     name                = string
-    value               = string
+    value               = optional(string)
   }))
   default     = null
   description = <<-EOT
 
- - `key_vault_secret_id` - (Optional) The URL of the Azure Key Vault containing the secret. Required when `identity` is specified.
- - `identity` - (Optional) The identity associated with the secret.
- - `name` - (Required) The Secret name.
- - `value` - (Required) The value for this secret.
-
+- `name` - (Required) The Secret name.  A secret name must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character.
+either:
+- `value` - (Optional) The value for this secret.  Required if `key_vault_secret_id` is not specified.
+or:
+- `key_vault_secret_id` - (Optional) The URL of the Azure Key Vault containing the secret.
+- `identity` - (Optional) The identity associated with the secret.  Required when `key_vault_secret_id` is specified.
+ 
 EOT
+
+  validation {
+    condition     = var.secret == null || can(regex("^([a-z0-9]+[-.])*[a-z0-9]+$", [for s in var.secret : s.name]))
+    error_message = "Property 'secret.name' has an invalid value. A secret name must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character."
+  }
 }
 
 variable "timeouts" {

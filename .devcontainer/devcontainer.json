@@ -18,8 +18,11 @@
         "go.goroot": "/usr/local/go"
       },
       "extensions": [
-        "hashicorp.terraform",
-        "golang.Go"
+        "azapi-vscode.azapi",
+        "davidanson.vscode-markdownlint",
+        "editorconfig.editorconfig",
+        "golang.Go",
+        "hashicorp.terraform"
       ]
     }
   }
