@@ -2,7 +2,7 @@ locals {
   location                           = var.location != null ? var.location : data.azurerm_resource_group.rg.location
   role_definition_resource_substring = "/providers/Microsoft.Authorization/roleDefinitions"
 
-  secrets = jsondecode(azapi_resource.container_app.body).properties.secrets != null ? [
+  secrets = try(jsondecode(azapi_resource.container_app.body).properties.secrets, null) != null ? [
     for secret in jsondecode(azapi_resource.container_app.body).properties.secrets : {
       name                = secret.name
       value               = secret.value
@@ -16,7 +16,7 @@ locals {
     max_replicas    = jsondecode(azapi_resource.container_app.body).properties.template.scale.maxReplicas
     min_replicas    = jsondecode(azapi_resource.container_app.body).properties.template.scale.minReplicas
 
-    init_container = jsondecode(azapi_resource.container_app.body).properties.template.initContainers != null ? [
+    init_container = try(jsondecode(azapi_resource.container_app.body).properties.template.initContainers, null) != null ? [
       for ic in jsondecode(azapi_resource.container_app.body).properties.template.initContainers :
       {
         name    = ic.name
@@ -25,22 +25,22 @@ locals {
         memory  = ic.resources.memory
         command = ic.command
         args    = ic.args
-        env = [
+        env = ic.env != null ? [
           for e in ic.env :
           {
             name        = e.name
             value       = e.value
             secret_name = e.secretRef
           }
-        ]
-        volume_mounts = [
+        ] : []
+        volume_mounts = ic.volumeMounts != null ? [
           for vm in ic.volumeMounts :
           {
             name       = vm.volumeName
             mount_path = vm.mountPath
             sub_path   = vm.subPath
           }
-        ]
+        ] : []
       }
     ] : null
 
@@ -112,26 +112,26 @@ locals {
 
         command = c.command
         args    = c.args
-        env = [
+        env = c.env != null ? [
           for e in c.env :
           {
             name        = e.name
             value       = e.value
             secret_name = e.secretRef
           }
-        ]
-        volume_mounts = [
+        ] : []
+        volume_mounts = c.volumeMounts != null ? [
           for vm in c.volumeMounts :
           {
             name       = vm.volumeName
             mount_path = vm.mountPath
             sub_path   = vm.subPath
           }
-        ]
+        ] : []
       }
     ]
 
-    azure_queue_scale_rules = jsondecode(azapi_resource.container_app.body).properties.scale.rules != null ? [
+    azure_queue_scale_rules = try(jsondecode(azapi_resource.container_app.body).properties.scale.rules, null) != null ? [
       for rule in jsondecode(azapi_resource.container_app.body).properties.scale.rules : {
         name         = rule.name
         queue_name   = try(rule.azureQueue.queueName, null)
@@ -145,7 +145,7 @@ locals {
       } if try(rule.azureQueue, null) != null
     ] : null
 
-    custom_scale_rules = jsondecode(azapi_resource.container_app.body).properties.scale.rules != null ? [
+    custom_scale_rules = try(jsondecode(azapi_resource.container_app.body).properties.scale.rules, null) != null ? [
       for rule in jsondecode(azapi_resource.container_app.body).properties.scale.rules : {
         name             = rule.name
         custom_rule_type = try(rule.custom.metadata.type, null)
@@ -158,7 +158,7 @@ locals {
       } if try(rule.custom, null) != null
     ] : null
 
-    http_scale_rules = jsondecode(azapi_resource.container_app.body).properties.scale.rules != null ? [
+    http_scale_rules = try(jsondecode(azapi_resource.container_app.body).properties.scale.rules, null) != null ? [
       for rule in jsondecode(azapi_resource.container_app.body).properties.scale.rules : {
         name                = rule.name
         concurrent_requests = try(rule.http.metadata.concurrentRequests, null)
@@ -171,7 +171,7 @@ locals {
       } if try(rule.http, null) != null
     ] : null
 
-    tcp_scale_rules = jsondecode(azapi_resource.container_app.body).properties.scale.rules != null ? [
+    tcp_scale_rules = try(jsondecode(azapi_resource.container_app.body).properties.scale.rules, null) != null ? [
       for rule in jsondecode(azapi_resource.container_app.body).properties.scale.rules : {
         name                = rule.name
         concurrent_requests = try(rule.tcp.metadata.concurrentRequests, null)
