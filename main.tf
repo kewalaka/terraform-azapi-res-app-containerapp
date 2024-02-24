@@ -191,7 +191,7 @@ resource "azapi_resource" "container_app" {
   location                  = local.location
   name                      = var.name
   parent_id                 = data.azurerm_resource_group.rg.id
-  response_export_values    = ["identity"]
+  response_export_values    = ["*"] # ["identity", "activeRevisionsMode"]
   schema_validation_enabled = false
   tags                      = var.tags
 
@@ -212,6 +212,9 @@ resource "azapi_resource" "container_app" {
       update = timeouts.value.update
     }
   }
+
+  ignore_body_changes = ["properties.template.revisionSuffix"]
+
 }
 
 resource "azurerm_management_lock" "this" {

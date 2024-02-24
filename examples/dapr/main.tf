@@ -52,7 +52,6 @@ module "node_app" {
   resource_group_name     = azurerm_resource_group.this.name
   environment_resource_id = azapi_resource.managed_environment.id
 
-  workload_profile_name = ""
   ingress = {
     external_enabled = false
     target_port      = 3000
@@ -87,7 +86,6 @@ module "python_app" {
   resource_group_name     = azurerm_resource_group.this.name
   environment_resource_id = azapi_resource.managed_environment.id
 
-  workload_profile_name = ""
   dapr = {
     enabled = true
     app_id  = "pythonapp"
