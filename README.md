@@ -523,7 +523,7 @@ Description: The name of the Container App.
 
 ### <a name="output_resource"></a> [resource](#output\_resource)
 
-Description: The Container Apps resource.
+Description: The Container App resource.
 
 ## Modules
 
