@@ -39,7 +39,6 @@ module "container_app" {
   resource_group_name     = azurerm_resource_group.this.name
   environment_resource_id = azurerm_container_app_environment.this.id
 
-  workload_profile_name = "Consumption"
   ingress = {
     external_enabled = true
     target_port      = 80
