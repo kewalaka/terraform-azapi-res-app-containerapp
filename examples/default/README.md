@@ -1,65 +1,167 @@
 <!-- BEGIN_TF_DOCS -->
-# Default example
+# Startup example
 
 This deploys the module in its simplest form.
 
 ```hcl
-terraform {
-  required_version = ">= 1.3.0"
-  required_providers {
-    azurerm = {
-      source  = "hashicorp/azurerm"
-      version = ">= 3.7.0, < 4.0.0"
+resource "random_id" "rg_name" {
+  byte_length = 8
+}
+
+resource "random_id" "env_name" {
+  byte_length = 8
+}
+
+resource "random_id" "container_name" {
+  byte_length = 4
+}
+
+resource "azurerm_resource_group" "test" {
+  location = var.location
+  name     = "example-container-app-${random_id.rg_name.hex}"
+}
+
+locals {
+  counting_app_name  = "counting-${random_id.container_name.hex}"
+  dashboard_app_name = "dashboard-${random_id.container_name.hex}"
+}
+
+resource "azurerm_container_app_environment" "example" {
+  location            = azurerm_resource_group.test.location
+  name                = "my-environment"
+  resource_group_name = azurerm_resource_group.test.name
+}
+
+module "counting" {
+  source = "../.."
+
+  container_app_environment_resource_id = azurerm_container_app_environment.example.id
+  location                              = azurerm_resource_group.test.location
+  name                                  = local.counting_app_name
+  resource_group_name                   = azurerm_resource_group.test.name
+  template = {
+    containers = [
+      {
+        name   = "countingservicetest1"
+        memory = "0.5Gi"
+        cpu    = 0.25
+        image  = "docker.io/hashicorp/counting-service:0.0.2"
+        env = [
+          {
+            name  = "PORT"
+            value = "9001"
+          }
+        ]
+        readiness_probes = [{
+          initial_delay_seconds = 5
+          path                  = "/health"
+          period_seconds        = 10
+          port                  = 9001
+          transport             = "HTTP"
+        }]
+      },
+    ]
+  }
+  auth_configs = {
+    fake_facebook = {
+      name = "current"
+      global_validation = {
+        unauthenticated_client_action = "AllowAnonymous"
+      }
+      identity_providers = {
+        facebook = {
+          registration = {
+            app_id                  = "123"
+            app_secret_setting_name = "facebook-secret"
+          }
+        }
+      }
+      platform = {
+        enabled = true
+      }
+    }
+  }
+  ingress = {
+    allow_insecure_connections = true
+    client_certificate_mode    = "ignore"
+    external_enabled           = true
+    target_port                = 9001
+    traffic_weight = [{
+      latest_revision = true
+      percentage      = 100
+    }]
+  }
+  revision_mode = "Single"
+  secrets = {
+    facebook_secret = {
+      name  = "facebook-secret"
+      value = "very_secret"
     }
   }
 }
 
-provider "azurerm" {
-  skip_provider_registration = true
-  features {}
-}
+module "dashboard" {
+  source = "../.."
 
-# This ensures we have unique CAF compliant names for our resources.
-module "naming" {
-  source  = "Azure/naming/azurerm"
-  version = "0.4.0"
-}
-
-# This is required for resource modules
-resource "azurerm_resource_group" "this" {
-  name     = module.naming.resource_group.name_unique
-  location = "australiaeast"
-}
-
-resource "azurerm_container_app_environment" "this" {
-  name                = module.naming.container_app_environment.name_unique
-  location            = azurerm_resource_group.this.location
-  resource_group_name = azurerm_resource_group.this.name
-}
-
-# This is the module call
-module "container_app" {
-  source = "../../"
-  # source             = "Azure/avm-<res/ptn>-<name>/azurerm"
-  name                    = module.naming.container_app.name_unique
-  resource_group_name     = azurerm_resource_group.this.name
-  environment_resource_id = azurerm_container_app_environment.this.id
-
-  workload_profile_name = "Consumption"
-  ingress = {
-    external_enabled = true
-    target_port      = 80
-  }
+  container_app_environment_resource_id = azurerm_container_app_environment.example.id
+  location                              = azurerm_resource_group.test.location
+  name                                  = local.dashboard_app_name
+  resource_group_name                   = azurerm_resource_group.test.name
   template = {
-    container = [{
-      image  = "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest"
-      name   = "containerapps-helloworld"
-      cpu    = "0.25"
-      memory = "0.5Gi"
-    }]
-    min_replicas = 1
-    max_replicas = 1
+    containers = [
+      {
+        name   = "testdashboard"
+        memory = "1Gi"
+        cpu    = 0.5
+        image  = "docker.io/hashicorp/dashboard-service:0.0.4"
+        env = [
+          {
+            name  = "PORT"
+            value = "8080"
+          },
+          {
+            name  = "COUNTING_SERVICE_URL"
+            value = "http://${local.counting_app_name}"
+          }
+        ]
+        liveness_probes = [{
+          initial_delay_seconds = 5
+          path                  = "/health"
+          period_seconds        = 10
+          port                  = 8080
+          transport             = "HTTP"
+        }]
+        startup_probes = [{
+          initial_delay_seconds = 5
+          period_seconds        = 10
+          transport             = "HTTP"
+          path                  = "/health"
+          port                  = 8080
+          header = [
+            {
+              name  = "X-Random-Header"
+              value = "test"
+            }
+          ]
+        }]
+      },
+    ]
   }
+  ingress = {
+    allow_insecure_connections = false
+    client_certificate_mode    = "ignore"
+    target_port                = 8080
+    external_enabled           = true
+
+    traffic_weight = [{
+      latest_revision = true
+      percentage      = 100
+    }]
+  }
+  managed_identities = {
+    system_assigned = true
+  }
+  revision_mode = "Single"
 }
 ```
 
@@ -68,22 +170,21 @@ module "container_app" {
 
 The following requirements are needed by this module:
 
-- <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) (>= 1.3.0)
+- <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) (>= 1.9, < 2.0)
 
-- <a name="requirement_azurerm"></a> [azurerm](#requirement\_azurerm) (>= 3.7.0, < 4.0.0)
+- <a name="requirement_azurerm"></a> [azurerm](#requirement\_azurerm) (>= 4.20.0, < 5.0)
 
-## Providers
-
-The following providers are used by this module:
-
-- <a name="provider_azurerm"></a> [azurerm](#provider\_azurerm) (>= 3.7.0, < 4.0.0)
+- <a name="requirement_random"></a> [random](#requirement\_random) (>= 3.0.0)
 
 ## Resources
 
 The following resources are used by this module:
 
-- [azurerm_container_app_environment.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/container_app_environment) (resource)
-- [azurerm_resource_group.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/resource_group) (resource)
+- [azurerm_container_app_environment.example](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/container_app_environment) (resource)
+- [azurerm_resource_group.test](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/resource_group) (resource)
+- [random_id.container_name](https://registry.terraform.io/providers/hashicorp/random/latest/docs/resources/id) (resource)
+- [random_id.env_name](https://registry.terraform.io/providers/hashicorp/random/latest/docs/resources/id) (resource)
+- [random_id.rg_name](https://registry.terraform.io/providers/hashicorp/random/latest/docs/resources/id) (resource)
 
 <!-- markdownlint-disable MD013 -->
 ## Required Inputs
@@ -92,27 +193,47 @@ No required inputs.
 
 ## Optional Inputs
 
-No optional inputs.
+The following input variables are optional (have default values):
+
+### <a name="input_location"></a> [location](#input\_location)
+
+Description: n/a
+
+Type: `string`
+
+Default: `"eastus"`
 
 ## Outputs
 
-No outputs.
+The following outputs are exported:
+
+### <a name="output_dashboard_url"></a> [dashboard\_url](#output\_dashboard\_url)
+
+Description: n/a
+
+### <a name="output_latest_revision_fqdn"></a> [latest\_revision\_fqdn](#output\_latest\_revision\_fqdn)
+
+Description: n/a
+
+### <a name="output_latest_revision_name"></a> [latest\_revision\_name](#output\_latest\_revision\_name)
+
+Description: n/a
 
 ## Modules
 
 The following Modules are called:
 
-### <a name="module_container_app"></a> [container\_app](#module\_container\_app)
+### <a name="module_counting"></a> [counting](#module\_counting)
 
-Source: ../../
+Source: ../..
 
 Version:
 
-### <a name="module_naming"></a> [naming](#module\_naming)
+### <a name="module_dashboard"></a> [dashboard](#module\_dashboard)
 
-Source: Azure/naming/azurerm
+Source: ../..
 
-Version: 0.4.0
+Version:
 
 <!-- markdownlint-disable-next-line MD041 -->
 ## Data Collection

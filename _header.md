@@ -1,4 +1,4 @@
-# terraform-azapi-res-container-apps
+# Azure Container Apps using AzAPI
 
 This is a repo for Container Apps ***in the style of*** Azure Verified Modules (AVM), for official AVM modules, please see <https://aka.ms/AVM>.
 
@@ -9,17 +9,15 @@ Currently implemented parameters cover;
 - dapr
 - container
 - ingress
+- init containers
 - probes (liveness, readiness & startup)
 - secrets
 - registries
+- volumes
 
 > [!WARNING]
 > Major version Zero (0.y.z) is for initial development. Anything MAY change at any time. A module SHOULD NOT be considered stable till at least it is major version one (1.0.0) or greater. Changes will always be via new versions being published and no changes will be made to existing published versions. For more details please go to <https://semver.org/>
 
 ## Background
 
-This project was originally written because the AzAPI provider was missing within the AzureRM provider for [workload profiles](https://github.com/hashicorp/terraform-provider-azurerm/issues/21747).
-
-This can be converted using [azapi2azurerm](https://github.com/Azure/azapi2azurerm) once Container Apps support stablises in the Azure RM provider.
-
-This project includes [examples](./examples/) showing default settings and an example from Microsoft Learn illustrating Dapr.
+This project was written as an experiement in removing the AzureRM dependency.  It has been raised as a PR against the official AVM project but there are other pre-requisites needed before this can be merged, so this version exists as an alternative until this time.

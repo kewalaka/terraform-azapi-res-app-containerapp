@@ -1,6 +1,47 @@
-output "id" {
-  description = "The ID of the Container App."
-  value       = azapi_resource.container_app.id
+output "custom_domain_verification_id" {
+  description = "The custom domain verification ID for the Container App."
+  sensitive   = true
+  value       = azapi_resource.container_app.output.properties.customDomainVerificationId
+}
+
+output "custom_domains" {
+  description = "The custom domains configured for the Container App."
+  value       = try(azapi_resource.container_app.output.properties.configuration.ingress.customDomains, null)
+}
+
+output "environment_id" {
+  description = "The ID of the Container App Environment."
+  value       = azapi_resource.container_app.output.properties.environmentId
+}
+
+output "fqdn_url" {
+  description = "https url that contains ingress's fqdn, could be used to access the deployed app."
+  value       = try("https://${azapi_resource.container_app.output.properties.configuration.ingress.fqdn}", "")
+}
+
+output "identity" {
+  description = "The identities assigned to the Container App."
+  value       = azapi_resource.container_app.output.identity
+}
+
+output "latest_ready_revision_name" {
+  description = "The name of the latest ready revision of the Container App."
+  value       = azapi_resource.container_app.output.properties.latestReadyRevisionName
+  }
+
+output "latest_revision_fqdn" {
+  description = "The FQDN of the latest revision of the Container App."
+  value       = try("https://${azapi_resource.container_app.output.properties.latestRevisionFqdn}", "")
+}
+
+output "latest_revision_name" {
+  description = "The name of the latest revision of the Container App."
+  value       = azapi_resource.container_app.output.properties.latestRevisionName
+}
+
+output "location" {
+  description = "The Azure Region where the Container App is located."
+  value       = azapi_resource.container_app.location
 }
 
 output "name" {
@@ -8,30 +49,12 @@ output "name" {
   value       = azapi_resource.container_app.name
 }
 
-output "resource" {
-  description = "The Container App resource."
-  value = {
-    id                  = azapi_resource.container_app.id
-    name                = azapi_resource.container_app.name
-    location            = azapi_resource.container_app.location
-    resource_group_name = data.azurerm_resource_group.rg.name
+output "outbound_ip_addresses" {
+  description = "The outbound IP addresses of the Container App."
+  value       = azapi_resource.container_app.output.properties.outboundIpAddresses
+}
 
-    container_app_environment_id = jsondecode(azapi_resource.container_app.output).properties.environmentId
-
-    revision_mode                 = jsondecode(azapi_resource.container_app.output).properties.activeRevisionsMode
-    workload_profile_name         = try(jsondecode(azapi_resource.container_app.output).properties.workloadProfileName, null)
-    custom_domain_verification_id = try(jsondecode(azapi_resource.container_app.output).properties.custom_domain_verification_id, null)
-
-    secret   = local.secrets
-    template = local.templates
-
-    #
-    #dapr
-    #identity
-    #ingress
-    #registry
-    #
-
-    tags = azapi_resource.container_app.tags
-  }
+output "resource_id" {
+  description = "Resource ID of container app resource created by this module."
+  value       = azapi_resource.container_app.id
 }

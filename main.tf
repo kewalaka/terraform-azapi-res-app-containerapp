@@ -1,10 +1,9 @@
-data "azurerm_resource_group" "rg" {
-  name = var.resource_group_name
-}
-
 resource "azapi_resource" "container_app" {
-  type = "Microsoft.App/containerApps@2023-05-01"
-  body = jsonencode({
+  location  = var.location
+  name      = var.name
+  parent_id = local.resource_group_id
+  type      = "Microsoft.App/containerApps@2025-01-01"
+  body = {
     properties = {
       configuration = {
         activeRevisionsMode = var.revision_mode
@@ -18,13 +17,26 @@ resource "azapi_resource" "container_app" {
           httpReadBufferSize = var.dapr.http_read_buffer_size
           logLevel           = var.dapr.log_level
         } : null
+        identitySettings = var.identity_settings != null ? [
+          for is in var.identity_settings : {
+            identity  = is.identity
+            lifecycle = is.lifecycle
+          }
+        ] : []
         ingress = var.ingress != null ? {
           allowInsecure         = var.ingress.allow_insecure_connections
-          clientCertificateMode = var.ingress.client_certificate_mode
+          clientCertificateMode = title(var.ingress.client_certificate_mode)
           exposedPort           = var.ingress.exposed_port
           external              = var.ingress.external_enabled
           targetPort            = var.ingress.target_port
-          transport             = var.ingress.transport
+          transport             = title(var.ingress.transport)
+          additionalPortMappings = var.ingress.additional_port_mappings != null ? [
+            for apm in var.ingress.additional_port_mappings : {
+              exposedPort = apm.exposed_port
+              external    = apm.external
+              targetPort  = apm.target_port
+            }
+          ] : null
           corsPolicy = var.ingress.cors_policy != null ? {
             allowCredentials = var.ingress.cors_policy.allow_credentials
             allowedHeaders   = var.ingress.cors_policy.allowed_headers
@@ -33,50 +45,68 @@ resource "azapi_resource" "container_app" {
             exposeHeaders    = var.ingress.cors_policy.expose_headers
             maxAge           = var.ingress.cors_policy.max_age
           } : null
-          customDomains = var.ingress.custom_domain != null ? {
-            bindingType   = var.ingress.custom_domain.certificate_binding_type
-            certificateId = var.ingress.custom_domain.certificate_id
-            name          = var.ingress.custom_domain.name
-          } : null
-          ipSecurityRestrictions = var.ingress.ip_restrictions != null ? {
-            action         = var.ingress.ip_restrictions.action
-            description    = var.ingress.ip_restrictions.description
-            ipAddressRange = var.ingress.ip_restrictions.ip_range
-            name           = var.ingress.ip_restrictions.name
-          } : null
+          customDomains = var.ingress.custom_domain != null ? [
+            {
+              bindingType   = var.ingress.custom_domain.certificate_binding_type
+              certificateId = var.ingress.custom_domain.certificate_id
+              name          = var.ingress.custom_domain.name
+            }
+          ] : null
+          ipSecurityRestrictions = var.ingress.ip_restrictions != null ? [
+            for ipr in var.ingress.ip_restrictions : {
+              action         = ipr.action
+              description    = ipr.description
+              ipAddressRange = ipr.ip_range
+              name           = ipr.name
+            }
+          ] : null
           stickySessions = var.ingress.sticky_sessions != null ? {
             affinity = var.ingress.sticky_sessions.affinity
           } : null
-          traffic = var.ingress.traffic_weight != null ? {
-            label          = var.ingress.traffic_weight.label
-            latestRevision = var.ingress.traffic_weight.latest_revision
-            revisionName   = var.ingress.traffic_weight.revision_suffix
-            weight         = var.ingress.traffic_weight.percentage
-          } : null
+          traffic = var.ingress.traffic_weight == null ? [{
+            label          = ""
+            latestRevision = true
+            revisionName   = ""
+            weight         = 100
+            }] : [
+            for weight in var.ingress.traffic_weight : {
+              label          = weight.label
+              latestRevision = weight.latest_revision
+              revisionName   = weight.revision_suffix
+              weight         = weight.percentage
+            }
+          ]
         } : null
         maxInactiveRevisions = var.max_inactive_revisions
-        registries = var.registry != null ? [
-          for reg in var.registry : {
-            identity          = reg.identity
+        registries = var.registries != null ? [
+          for reg in var.registries : {
+            identity          = reg.identity == null ? "" : reg.identity
             passwordSecretRef = reg.password_secret_name
             server            = reg.server
             username          = reg.username
           }
         ] : null
-        secrets = var.secret != null ? [
-          for s in var.secret : {
+        runtime = var.runtime != null ? {
+          java = var.runtime.java != null ? {
+            enableMetrics = var.runtime.java.enable_metrics
+          } : null
+        } : null
+        secrets = var.secrets != null ? [
+          for s in var.secrets : {
             identity    = s.identity
             keyVaultUrl = s.key_vault_secret_id
             name        = s.name
             value       = s.value
           }
         ] : null
-        #service              = var.service
+        service = var.service != null ? {
+          type = var.service.type
+        } : null
       }
-      environmentId = var.environment_resource_id
+      environmentId = var.container_app_environment_resource_id
       template = {
         containers = [
-          for cont in var.template.container : {
+          for cont in var.template.containers : {
             args    = cont.args
             command = cont.command
             env = cont.env != null ? [
@@ -86,85 +116,9 @@ resource "azapi_resource" "container_app" {
                 value     = e.value
               }
             ] : null
-            image = cont.image
-            name  = cont.name
-            probes = setunion(
-              [
-                for liveness_probe in try(cont.liveness_probe, []) : {
-                  failureThreshold              = liveness_probe.failure_count_threshold
-                  initialDelaySeconds           = liveness_probe.initial_delay
-                  periodSeconds                 = liveness_probe.interval_seconds
-                  terminationGracePeriodSeconds = liveness_probe.termination_grace_period_seconds
-                  timeoutSeconds                = liveness_probe.timeout
-                  type                          = "Liveness"
-                  httpGet = liveness_probe.transport == "HTTP" || liveness_probe.transport == "HTTPS" ? {
-                    host   = liveness_probe.host
-                    path   = liveness_probe.path
-                    port   = liveness_probe.port
-                    scheme = liveness_probe.transport
-                    httpHeaders = liveness_probe.header != null ? [
-                      for header in liveness_probe.header : {
-                        name  = header.name
-                        value = header.value
-                      }
-                    ] : null
-                  } : null
-                  tcpSocket = liveness_probe.transport == "TCP" ? {
-                    host = liveness_probe.host
-                    port = liveness_probe.port
-                  } : null
-              }],
-              [
-                for readiness_probe in try(cont.readiness_probe, []) : {
-                  failureThreshold    = readiness_probe.failure_count_threshold
-                  initialDelaySeconds = readiness_probe.initial_delay
-                  periodSeconds       = readiness_probe.interval_seconds
-                  successThreshold    = readiness_probe.success_count_threshold
-                  timeoutSeconds      = readiness_probe.timeout
-                  type                = "Readiness"
-                  httpGet = readiness_probe.transport == "HTTP" || readiness_probe.transport == "HTTPS" ? {
-                    host   = readiness_probe.host
-                    path   = readiness_probe.path
-                    port   = readiness_probe.port
-                    scheme = readiness_probe.transport
-                    httpHeaders = readiness_probe.header != null ? [
-                      for header in readiness_probe.header : {
-                        name  = header.name
-                        value = header.value
-                      }
-                    ] : null
-                  } : null
-                  tcpSocket = readiness_probe.transport == "TCP" ? {
-                    host = readiness_probe.host
-                    port = readiness_probe.port
-                  } : null
-              }],
-              [
-                for startup_probe in try(cont.startup_probe, []) : {
-                  failureThreshold              = startup_probe.failure_count_threshold
-                  initialDelaySeconds           = startup_probe.initial_delay
-                  periodSeconds                 = startup_probe.interval_seconds
-                  terminationGracePeriodSeconds = startup_probe.termination_grace_period_seconds
-                  timeoutSeconds                = startup_probe.timeout
-                  type                          = "Startup"
-                  httpGet = startup_probe.transport == "HTTP" || startup_probe.transport == "HTTPS" ? {
-                    host   = startup_probe.host
-                    path   = startup_probe.path
-                    port   = startup_probe.port
-                    scheme = startup_probe.transport
-                    httpHeaders = startup_probe.header != null ? [
-                      for header in startup_probe.header : {
-                        name  = header.name
-                        value = header.value
-                      }
-                    ] : null
-                  } : null
-                  tcpSocket = startup_probe.transport == "TCP" ? {
-                    host = startup_probe.host
-                    port = startup_probe.port
-                  } : null
-              }]
-            )
+            image  = cont.image
+            name   = cont.name
+            probes = length(local.container_probes[cont.name]) > 0 ? local.container_probes[cont.name] : null
             resources = {
               cpu    = cont.cpu
               memory = cont.memory
@@ -177,34 +131,94 @@ resource "azapi_resource" "container_app" {
               }
             ] : null
           }
-
         ]
+        initContainers = var.template.init_containers != null ? [
+          for init_cont in var.template.init_containers : {
+            args    = init_cont.args
+            command = init_cont.command
+            env = init_cont.env != null ? [
+              for e in init_cont.env : {
+                name      = e.name
+                secretRef = e.secret_name
+                value     = e.value
+              }
+            ] : null
+            image = init_cont.image
+            name  = init_cont.name
+            resources = {
+              cpu    = init_cont.cpu
+              memory = init_cont.memory
+            }
+            volumeMounts = init_cont.volume_mounts != null ? [
+              for vm in init_cont.volume_mounts : {
+                mountPath  = vm.path
+                subPath    = vm.sub_path
+                volumeName = vm.name
+              }
+            ] : null
+          }
+        ] : null
         revisionSuffix = var.template.revision_suffix
         scale = {
           minReplicas = var.template.min_replicas
           maxReplicas = var.template.max_replicas
+          # Add missing scale properties
+          cooldownPeriod  = var.template.cooldown_period
+          pollingInterval = var.template.polling_interval
+          rules           = length(local.scale_rules) > 0 ? local.scale_rules : null
         }
+        serviceBinds = var.template.service_binds != null ? [
+          for sb in var.template.service_binds : {
+            name      = sb.name
+            serviceId = sb.service_id
+          }
+        ] : null
+        terminationGracePeriodSeconds = var.template.termination_grace_period_seconds
+        volumes = var.template.volumes != null ? [
+          for vol in var.template.volumes : {
+            name         = vol.name
+            storageType  = vol.storage_type
+            storageName  = vol.storage_name
+            mountOptions = vol.mount_options
+            secrets = vol.secrets != null ? [
+              for secret in vol.secrets : {
+                path      = secret.path
+                secretRef = secret.secret_name
+              }
+            ] : null
+          }
+        ] : null
       }
       workloadProfileName = var.workload_profile_name
     }
-  })
-  location                  = local.location
-  name                      = var.name
-  parent_id                 = data.azurerm_resource_group.rg.id
-  response_export_values    = ["*"] # ["identity", "activeRevisionsMode"]
-  schema_validation_enabled = false
+  }
+  response_export_values = [
+    "identity",
+    "location",
+    "properties.environmentId",
+    "properties.latestRevisionName",
+    "properties.latestReadyRevisionName",
+    "properties.latestRevisionFqdn",
+    "properties.configuration.ingress.customDomains",
+    "properties.configuration.ingress.fqdn",
+    "properties.customDomainVerificationId",
+    "properties.outboundIpAddresses",
+    "properties.revisionSuffix",
+  ]
+  schema_validation_enabled = true
   tags                      = var.tags
 
   dynamic "identity" {
-    for_each = var.managed_identities != null ? { this = var.managed_identities } : {}
+    for_each = module.avm_interfaces.managed_identities_azapi == null ? [0] : [1]
+
     content {
-      type         = identity.value.system_assigned && length(identity.value.user_assigned_resource_ids) > 0 ? "SystemAssigned, UserAssigned" : length(identity.value.user_assigned_resource_ids) > 0 ? "UserAssigned" : "SystemAssigned"
-      identity_ids = identity.value.user_assigned_resource_ids
+      type         = try(module.avm_interfaces.managed_identities_azapi.type, "None")
+      identity_ids = try(module.avm_interfaces.managed_identities_azapi.identity_ids, [])
     }
   }
-
   dynamic "timeouts" {
     for_each = var.timeouts == null ? [] : [var.timeouts]
+
     content {
       create = timeouts.value.create
       delete = timeouts.value.delete
@@ -213,27 +227,14 @@ resource "azapi_resource" "container_app" {
     }
   }
 
-  ignore_body_changes = ["properties.template.revisionSuffix"]
-
+  lifecycle {
+    ignore_changes = [
+      body.properties.template.revisionSuffix,
+    ]
+  }
 }
 
-resource "azurerm_management_lock" "this" {
-  count = var.lock.kind != "None" ? 1 : 0
-
-  lock_level = var.lock.kind
-  name       = coalesce(var.lock.name, "lock-${var.name}")
-  scope      = azapi_resource.container_app.id
-}
-
-resource "azurerm_role_assignment" "this" {
-  for_each = var.role_assignments
-
-  principal_id                           = each.value.principal_id
-  scope                                  = azapi_resource.container_app.id
-  condition                              = each.value.condition
-  condition_version                      = each.value.condition_version
-  delegated_managed_identity_resource_id = each.value.delegated_managed_identity_resource_id
-  role_definition_id                     = strcontains(lower(each.value.role_definition_id_or_name), lower(local.role_definition_resource_substring)) ? each.value.role_definition_id_or_name : null
-  role_definition_name                   = strcontains(lower(each.value.role_definition_id_or_name), lower(local.role_definition_resource_substring)) ? null : each.value.role_definition_id_or_name
-  skip_service_principal_aad_check       = each.value.skip_service_principal_aad_check
+moved {
+  from = azurerm_container_app.this
+  to   = azapi_resource.container_app
 }

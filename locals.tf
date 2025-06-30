@@ -1,189 +1,171 @@
+data "azapi_client_config" "current" {}
+
 locals {
-  location                           = var.location != null ? var.location : data.azurerm_resource_group.rg.location
-  role_definition_resource_substring = "/providers/Microsoft.Authorization/roleDefinitions"
+  container_probes = {
+    for cont in var.template.containers : cont.name => concat(
 
-  secrets = try(jsondecode(azapi_resource.container_app.body).properties.secrets, null) != null ? [
-    for secret in jsondecode(azapi_resource.container_app.body).properties.secrets : {
-      name                = secret.name
-      value               = secret.value
-      identity            = secret.identity
-      key_vault_secret_id = secret.keyVaultUrl
-    }
-  ] : null
-
-  templates = {
-    revision_suffix = jsondecode(azapi_resource.container_app.body).properties.template.revisionSuffix
-    max_replicas    = jsondecode(azapi_resource.container_app.body).properties.template.scale.maxReplicas
-    min_replicas    = jsondecode(azapi_resource.container_app.body).properties.template.scale.minReplicas
-
-    init_container = try(jsondecode(azapi_resource.container_app.body).properties.template.initContainers, null) != null ? [
-      for ic in jsondecode(azapi_resource.container_app.body).properties.template.initContainers :
-      {
-        name    = ic.name
-        image   = ic.image
-        cpu     = ic.resources.cpu
-        memory  = ic.resources.memory
-        command = ic.command
-        args    = ic.args
-        env = ic.env != null ? [
-          for e in ic.env :
-          {
-            name        = e.name
-            value       = e.value
-            secret_name = e.secretRef
-          }
-        ] : []
-        volume_mounts = ic.volumeMounts != null ? [
-          for vm in ic.volumeMounts :
-          {
-            name       = vm.volumeName
-            mount_path = vm.mountPath
-            sub_path   = vm.subPath
-          }
-        ] : []
-      }
-    ] : null
-
-    container = [
-      for c in jsondecode(azapi_resource.container_app.body).properties.template.containers :
-      {
-        name   = c.name
-        image  = c.image
-        cpu    = c.resources.cpu
-        memory = c.resources.memory
-
-        liveness_probe = c.probes != null ? [
-          for probe in c.probes : {
-            failure_count_threshold          = probe.failureThreshold
-            initial_delay                    = probe.initialDelaySeconds
-            interval_seconds                 = probe.periodSeconds
-            host                             = probe.host
-            path                             = probe.path
-            port                             = probe.port
-            termination_grace_period_seconds = probe.termination_grace_period_seconds
-            timeout                          = probe.timeoutSeconds
-            transport                        = probe.transport
-            header = probe.httpHeaders != null ? [
-              for header in probe.httpHeaders : {
+      try(cont.liveness_probes, []) != null ? [
+        for liveness_probe in try(cont.liveness_probes, []) : {
+          failureThreshold              = liveness_probe.failure_count_threshold
+          initialDelaySeconds           = liveness_probe.initial_delay
+          periodSeconds                 = liveness_probe.interval_seconds
+          terminationGracePeriodSeconds = liveness_probe.termination_grace_period_seconds
+          timeoutSeconds                = liveness_probe.timeout
+          type                          = "Liveness"
+          httpGet = liveness_probe.transport == "HTTP" || liveness_probe.transport == "HTTPS" ? {
+            host   = liveness_probe.host
+            path   = liveness_probe.path
+            port   = liveness_probe.port
+            scheme = liveness_probe.transport
+            httpHeaders = liveness_probe.header != null ? [
+              for header in liveness_probe.header : {
                 name  = header.name
                 value = header.value
               }
             ] : null
-          } if try(probe.type == "Liveness", null)
-        ] : null
+          } : null
+          tcpSocket = liveness_probe.transport == "TCP" ? {
+            host = liveness_probe.host
+            port = liveness_probe.port
+          } : null
+      }] : [],
 
-        readiness_probe = c.probes != null ? [
-          for probe in c.probes : {
-            failure_count_threshold = probe.failureThreshold
-            interval_seconds        = probe.periodSeconds
-            host                    = probe.host
-            path                    = probe.path
-            port                    = probe.port
-            success_count_threshold = probe.successThreshold
-            timeout                 = probe.timeoutSeconds
-            transport               = probe.transport
-            header = probe.httpHeaders != null ? [
-              for header in probe.httpHeaders : {
+      try(cont.readiness_probes, []) != null ? [
+        for readiness_probe in try(cont.readiness_probes, []) : {
+          failureThreshold    = readiness_probe.failure_count_threshold
+          initialDelaySeconds = readiness_probe.initial_delay
+          periodSeconds       = readiness_probe.interval_seconds
+          successThreshold    = readiness_probe.success_count_threshold
+          timeoutSeconds      = readiness_probe.timeout
+          type                = "Readiness"
+          httpGet = readiness_probe.transport == "HTTP" || readiness_probe.transport == "HTTPS" ? {
+            host   = readiness_probe.host
+            path   = readiness_probe.path
+            port   = readiness_probe.port
+            scheme = readiness_probe.transport
+            httpHeaders = readiness_probe.header != null ? [
+              for header in readiness_probe.header : {
                 name  = header.name
                 value = header.value
               }
             ] : null
-          } if try(probe.type == "Readiness", null)
-        ] : null
+          } : null
+          tcpSocket = readiness_probe.transport == "TCP" ? {
+            host = readiness_probe.host
+            port = readiness_probe.port
+          } : null
+      }] : [],
 
-        startup_probe = c.probes != null ? [
-          for probe in c.probes : {
-            failure_count_threshold          = probe.failureThreshold
-            interval_seconds                 = probe.periodSeconds
-            host                             = probe.host
-            path                             = probe.path
-            port                             = probe.port
-            termination_grace_period_seconds = probe.termination_grace_period_seconds
-            timeout                          = probe.timeoutSeconds
-            transport                        = probe.transport
-            header = probe.httpHeaders != null ? [
-              for header in probe.httpHeaders : {
+      try(cont.startup_probes, []) != null ? [
+        for startup_probe in try(cont.startup_probes, []) : {
+          failureThreshold              = startup_probe.failure_count_threshold
+          initialDelaySeconds           = startup_probe.initial_delay
+          periodSeconds                 = startup_probe.interval_seconds
+          terminationGracePeriodSeconds = startup_probe.termination_grace_period_seconds
+          timeoutSeconds                = startup_probe.timeout
+          type                          = "Startup"
+          httpGet = startup_probe.transport == "HTTP" || startup_probe.transport == "HTTPS" ? {
+            host   = startup_probe.host
+            path   = startup_probe.path
+            port   = startup_probe.port
+            scheme = startup_probe.transport
+            httpHeaders = startup_probe.header != null ? [
+              for header in startup_probe.header : {
                 name  = header.name
                 value = header.value
               }
             ] : null
-          } if try(probe.type == "Startup", null)
-        ] : null
-
-        command = c.command
-        args    = c.args
-        env = c.env != null ? [
-          for e in c.env :
-          {
-            name        = e.name
-            value       = e.value
-            secret_name = e.secretRef
-          }
-        ] : []
-        volume_mounts = c.volumeMounts != null ? [
-          for vm in c.volumeMounts :
-          {
-            name       = vm.volumeName
-            mount_path = vm.mountPath
-            sub_path   = vm.subPath
-          }
-        ] : []
-      }
-    ]
-
-    azure_queue_scale_rules = try(jsondecode(azapi_resource.container_app.body).properties.scale.rules, null) != null ? [
-      for rule in jsondecode(azapi_resource.container_app.body).properties.scale.rules : {
-        name         = rule.name
-        queue_name   = try(rule.azureQueue.queueName, null)
-        queue_length = try(rule.azureQueue.queueLength, null)
-        authentication = [
-          for auth in try(rule.azureQueue.auth, []) : {
-            secret_name       = auth.secretRef
-            trigger_parameter = auth.triggerParameter
-          }
-        ]
-      } if try(rule.azureQueue, null) != null
-    ] : null
-
-    custom_scale_rules = try(jsondecode(azapi_resource.container_app.body).properties.scale.rules, null) != null ? [
-      for rule in jsondecode(azapi_resource.container_app.body).properties.scale.rules : {
-        name             = rule.name
-        custom_rule_type = try(rule.custom.metadata.type, null)
-        authentication = [
-          for auth in try(rule.custom.auth, []) : {
-            secret_name       = auth.secretRef
-            trigger_parameter = auth.triggerParameter
-          }
-        ]
-      } if try(rule.custom, null) != null
-    ] : null
-
-    http_scale_rules = try(jsondecode(azapi_resource.container_app.body).properties.scale.rules, null) != null ? [
-      for rule in jsondecode(azapi_resource.container_app.body).properties.scale.rules : {
-        name                = rule.name
-        concurrent_requests = try(rule.http.metadata.concurrentRequests, null)
-        authentication = [
-          for auth in try(rule.http.auth, []) : {
-            secret_name       = auth.secretRef
-            trigger_parameter = auth.triggerParameter
-          }
-        ]
-      } if try(rule.http, null) != null
-    ] : null
-
-    tcp_scale_rules = try(jsondecode(azapi_resource.container_app.body).properties.scale.rules, null) != null ? [
-      for rule in jsondecode(azapi_resource.container_app.body).properties.scale.rules : {
-        name                = rule.name
-        concurrent_requests = try(rule.tcp.metadata.concurrentRequests, null)
-        authentication = [
-          for auth in try(rule.tcp.auth, []) : {
-            secret_name       = auth.secretRef
-            trigger_parameter = auth.triggerParameter
-          }
-        ]
-      } if try(rule.tcp, null) != null
-    ] : null
-
+          } : null
+          tcpSocket = startup_probe.transport == "TCP" ? {
+            host = startup_probe.host
+            port = startup_probe.port
+          } : null
+      }] : []
+    )
   }
+  resource_group_id = "/subscriptions/${data.azapi_client_config.current.subscription_id}/resourceGroups/${var.resource_group_name}"
+  scale_rules = concat(
+    var.template.azure_queue_scale_rules != null ? [
+      for rule in var.template.azure_queue_scale_rules : {
+        name = rule.name
+        azureQueue = {
+          accountName = rule.account_name
+          queueName   = rule.queue_name
+          queueLength = rule.queue_length
+          identity    = rule.identity
+          auth = rule.authentication != null ? [
+            for auth in rule.authentication : {
+              secretRef        = auth.secret_name
+              triggerParameter = auth.trigger_parameter
+            }
+          ] : null
+        }
+        custom = null
+        http   = null
+        tcp    = null
+      }
+    ] : [],
 
+    var.template.custom_scale_rules != null ? [
+      for rule in var.template.custom_scale_rules : {
+        name = rule.name
+        custom = {
+          type     = rule.custom_rule_type
+          metadata = rule.metadata
+          identity = rule.identity
+          auth = rule.authentication != null ? [
+            for auth in rule.authentication : {
+              secretRef        = auth.secret_name
+              triggerParameter = auth.trigger_parameter
+            }
+          ] : null
+        }
+        azureQueue = null
+        http       = null
+        tcp        = null
+      }
+    ] : [],
+
+    var.template.http_scale_rules != null ? [
+      for rule in var.template.http_scale_rules : {
+        name = rule.name
+        http = {
+          metadata = rule.metadata != null ? rule.metadata : {
+            concurrentRequests = rule.concurrent_requests
+          }
+          identity = rule.identity
+          auth = rule.authentication != null ? [
+            for auth in rule.authentication : {
+              secretRef        = auth.secret_name
+              triggerParameter = auth.trigger_parameter
+            }
+          ] : null
+        }
+        azureQueue = null
+        custom     = null
+        tcp        = null
+      }
+    ] : [],
+
+    var.template.tcp_scale_rules != null ? [
+      for rule in var.template.tcp_scale_rules : {
+        name = rule.name
+        tcp = {
+          metadata = rule.metadata != null ? rule.metadata : {
+            concurrentRequests = rule.concurrent_requests
+          }
+          identity = rule.identity
+          auth = rule.authentication != null ? [
+            for auth in rule.authentication : {
+              secretRef        = auth.secret_name
+              triggerParameter = auth.trigger_parameter
+            }
+          ] : null
+        }
+        azureQueue = null
+        custom     = null
+        http       = null
+      }
+    ] : []
+  )
 }
