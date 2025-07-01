@@ -27,7 +27,7 @@ output "identity" {
 output "latest_ready_revision_name" {
   description = "The name of the latest ready revision of the Container App."
   value       = azapi_resource.container_app.output.properties.latestReadyRevisionName
-  }
+}
 
 output "latest_revision_fqdn" {
   description = "The FQDN of the latest revision of the Container App."
